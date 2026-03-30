@@ -47,6 +47,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites', # Required by django-allauth
 
+    # --- Headless V2 API Additions ---
+    'ninja_extra',
+    'ninja_jwt',
+
     'django_extensions',
     'django_bootstrap5',
     'crispy_forms',

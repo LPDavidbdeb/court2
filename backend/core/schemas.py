@@ -1,24 +1,27 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
+from pydantic import BaseModel, Field
 from datetime import datetime
 
-class ExhibitableMixin(BaseModel):
+class ExhibitableBaseSchema(BaseModel):
     """
-    Common serialization baseline for any object that can be 
-    displayed as an exhibit in the registry.
+    Base schema mirroring the ExhibitableMixin.
+    All models that can be exhibited must inherit from this to ensure a common serialization baseline.
     """
-    label: Optional[str] = None
-    exhibit_type: Optional[str] = None
-    date_display: Optional[str] = None
-    description: Optional[str] = None
-    parties: Optional[str] = None
-    public_url: Optional[str] = None
-
-class ProducedExhibitSchema(ExhibitableMixin):
     id: int
-    sort_order: int
-    content_type_model: Optional[str] = None
-    object_id: Optional[int] = None
+    public_url: Optional[str] = Field(None, description="Publicly accessible URL for the exhibit")
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
+    # Add any other core fields from your Django ExhibitableMixin here
 
     class Config:
         from_attributes = True
+
+class ProducedExhibitSchema(ExhibitableBaseSchema):
+    # Additional specific fields for ProducedExhibit
+    case_id: int
+    exhibit_type: str
+    parties: Optional[str] = None
+    label: Optional[str] = None
+    date_display: Optional[str] = None
+    description: Optional[str] = None

@@ -57,7 +57,7 @@ Code execution must follow these phases sequentially. Do not skip steps.
 * [ ] **3.2** Install and configure Tailwind CSS and Shadcn UI.
 * [ ] **3.3** Generate fundamental UI components via Shadcn (Buttons, Forms, Data Tables, Modals).
 * [ ] **3.4** Create the authentication context (`AuthContext`) to store and inject the JWT into API requests (Axios or fetch).
-* [ ] **3.5** Develop the connected views linked to the endpoints to display case files, the accounting tree, and documents.
+* [ ] **3.5** Develop the connected views linked to the endpoints to display case files, the document hierarchy tree, and documents.
 
 ---
 

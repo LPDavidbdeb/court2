@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
-from core.schemas import ProducedExhibitSchema
+from core.schemas import ProducedExhibitSchema # Importing the correctly mapped schema
 
 class LegalCaseSchema(BaseModel):
     id: int
