@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Le parjure d'Élise Ayoub{% endblock %}</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap CSS for form styling -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    /* === Base Reset === */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Lato', sans-serif;
+      background-color: #0b0b0b;
+      color: #f5f5f5;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    /* === Background === */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.7), rgba(0,0,0,0.95)),
+                  url("https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80") center/cover no-repeat;
+      filter: brightness(0.4) contrast(1.1);
+      z-index: -2;
+      animation: slowFade 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes slowFade {
+      0% { filter: brightness(0.4) contrast(1.1); }
+      100% { filter: brightness(0.6) contrast(1.3); }
+    }
+
+    /* === Hero Section for content === */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 100vh;
+      padding: 5rem 2rem;
+    }
+
+    .title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 6vw, 4rem); /* Slightly smaller to accommodate form */
+      letter-spacing: 2px;
+      color: #f5f5f5;
+      text-transform: uppercase;
+      animation: fadeIn 2s ease forwards;
+      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      margin-top: 0;
+      font-size: clamp(1rem, 2vw, 1.25rem); /* Slightly smaller */
+      font-style: italic;
+      color: #d8c690;
+      opacity: 0;
+      animation: fadeIn 2s ease forwards 1.5s;
+      margin-bottom: 3rem; /* Add space between subtitle and form */
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Custom styles for allauth forms */
+    .auth-form-container {
+        background-color: rgba(11, 11, 11, 0.8);
+        padding: 2rem;
+        border-radius: 8px;
+        border: 1px solid #d8c690;
+        max-width: 500px;
+        width: 100%;
+    }
+    .auth-form-container h2 {
+        font-family: 'Playfair Display', serif;
+        color: #f5f5f5;
+    }
+    .auth-form-container .form-label {
+        color: #d8c690;
+    }
+    .auth-form-container .form-control {
+        background-color: #222;
+        color: #f5f5f5;
+        border-color: #444;
+    }
+    .auth-form-container .form-control:focus {
+        background-color: #333;
+        color: #f5f5f5;
+        border-color: #d8c690;
+        box-shadow: 0 0 0 0.25rem rgba(216, 198, 144, 0.25);
+    }
+    .auth-form-container .btn-primary {
+        background-color: #d8c690;
+        border-color: #d8c690;
+        color: #0b0b0b;
+    }
+    .auth-form-container .btn-primary:hover {
+        background-color: #c9b882;
+        border-color: #c9b882;
+    }
+  </style>
+</head>
+
+<body>
+  {% include 'navbar.html' %}
+  
+  <section class="hero">
+    <h1 class="title">Le parjure d'Élise Ayoub</h1>
+    <p class="subtitle">« Là où le mensonge prolifère, la tyrannie s'annonce ou se perpétue. »<br>— Albert Camus</p>
+
+    {% block content %}
+    {% endblock %}
+  </section>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

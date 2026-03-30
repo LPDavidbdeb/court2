@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}All Email Quotes{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">All Saved Email Quotes</h1>
+            </div>
+            <div class="card-body">
+                {% if emails_with_quotes %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Source Email (Date Sent)</th>
+                                    <th>Quote Text</th>
+                                    <th>Associated Narratives</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for email in emails_with_quotes %}
+                                    {% for quote in email.quotes.all %}
+                                        <tr>
+                                            {% if forloop.first %}
+                                                <td rowspan="{{ email.quotes.count }}" style="vertical-align: middle;">
+                                                    <a href="{% url 'email_manager:thread_detail' email.thread.pk %}">
+                                                        <strong>{{ email.subject|truncatechars:50 }}</strong>
+                                                    </a>
+                                                    <br>
+                                                    <small class="text-muted">{{ email.date_sent|date:"Y-m-d H:i" }}</small>
+                                                </td>
+                                            {% endif %}
+                                            <td>"{{ quote.quote_text }}"</td>
+                                            <td>
+                                                {% if quote.trames_narratives.all %}
+                                                    <ul class="list-unstyled mb-0">
+                                                        {% for narrative in quote.trames_narratives.all %}
+                                                            <li>
+                                                                <a href="{% url 'argument_manager:detail' narrative.pk %}" class="badge bg-secondary">{{ narrative.titre }}</a>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <span class="text-muted">No narratives linked.</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'email_manager:quote_update' quote.pk %}" class="btn btn-primary btn-sm me-2">Edit</a>
+                                                <form action="{% url 'email_manager:quote_delete' quote.pk %}" method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this quote?');">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        No quotes have been saved yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

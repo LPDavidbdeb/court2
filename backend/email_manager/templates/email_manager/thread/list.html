@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Email Threads{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h1 class="h4 mb-0">Saved Email Threads</h1>
+                <div>
+                    <a href="{% url 'email_manager:email_upload' %}" class="btn btn-sm btn-secondary">Upload EML</a>
+                    <a href="{% url 'email_manager:thread_search' %}" class="btn btn-sm btn-light">Search New Email</a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if threads %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Start Date</th>
+                                    <th>Associated Protagonist</th>
+                                    <th>Thread Subject</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for thread in threads %}
+                                <tr>
+                                    <td>{{ thread.start_date|date:"Y-m-d H:i"|default:"N/A" }}</td>
+                                    <td>{{ thread.protagonist.get_full_name|default:"N/A" }}</td>
+                                    <td><a href="{% url 'email_manager:thread_detail' thread.pk %}">{{ thread.subject|default:"(No Subject)"|truncatechars:70 }}</a></td>
+                                    <td>
+                                        <a href="{% url 'email_manager:thread_detail' thread.pk %}" class="btn btn-info btn-sm me-2">View</a>
+                                        <form action="{% url 'email_manager:thread_delete' thread.pk %}" method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this entire thread? This action cannot be undone.');">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        No email threads have been saved yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

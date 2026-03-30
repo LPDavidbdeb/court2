@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Perjury Backlog{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Perjury Backlog</h1>
+    <p>This is your "Backlog of Perjury." It lists all statements that have been identified as false and are ready to be refuted.</p>
+
+    <div class="list-group">
+        {% for statement in statements %}
+            <div class="list-group-item list-group-item-action flex-column align-items-start">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">Statement #{{ statement.id }}</h5>
+                    <small>Created: {{ statement.created_at|date:"Y-m-d" }}</small>
+                </div>
+                <p class="mb-1">"{{ statement.text }}"</p>
+                <small class="text-muted">Source: {{ statement.document.title }}</small>
+                <div class="mt-2">
+                    <a href="{% url 'argument_manager:perjury_argument_create' %}?statement_ids={{ statement.id }}" class="btn btn-primary btn-sm">Refute this Statement</a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="list-group-item">
+                <p class="mb-0">No statements in the perjury backlog.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

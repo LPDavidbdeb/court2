@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Delete Event: {{ event.get_display_id }}{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4 text-danger">Confirm Delete</h1>
+
+    <div class="alert alert-warning" role="alert">
+        Are you sure you want to delete the event: <strong>"{{ event.get_display_id }} - {{ event.explanation|truncatechars:50 }}"</strong>?
+        This action cannot be undone.
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger me-2">Yes, Delete</button>
+        <a href="{% url 'events:detail' pk=event.pk %}" class="btn btn-secondary">No, Cancel</a>
+    </form>
+{% endblock %}

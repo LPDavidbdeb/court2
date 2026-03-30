@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .chat-container { max-width: 900px; margin: 2rem auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; font-family: sans-serif; display: flex; flex-direction: column; height: 85vh; }
+    .chat-header { padding: 15px; border-bottom: 1px solid #ddd; background-color: #f8f9fa; font-weight: bold; text-align: center; }
+    .messages-area { flex: 1; padding: 20px; overflow-y: auto; background-color: #e5ddd5; }
+    #loading-spinner { text-align: center; padding: 10px; display: none; }
+    .message-row { display: flex; margin-bottom: 15px; }
+    .message-row.participant-left { justify-content: flex-start; }
+    .message-row.participant-right { justify-content: flex-end; }
+    .bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; position: relative; font-size: 0.95em; line-height: 1.4; word-wrap: break-word; }
+    .bubble-left { background-color: #ffffff; color: #000; border-bottom-left-radius: 4px; }
+    .bubble-right { background-color: #dcf8c6; color: #000; border-bottom-right-radius: 4px; }
+    .msg-meta { font-size: 0.75em; margin-bottom: 4px; color: #666; font-weight: bold; }
+    .msg-time { font-size: 0.7em; margin-top: 5px; opacity: 0.7; text-align: right; }
+    .messages-area.selection-active .message-row { cursor: pointer; }
+    .messages-area.selection-active .message-row:hover .bubble { filter: brightness(0.95); }
+    .message-row.selected .bubble { border: 3px solid #0d6efd; background-color: #e7f1ff !important; }
+    #selection-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 15px 25px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; align-items: center; gap: 15px; z-index: 1000; }
+</style>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <span>{% if is_detail_view %}"{{ sequence_title }}"{% elif editing_sequence %}Editing: "{{ editing_sequence.title }}"{% else %}Conversation Stream{% endif %}</span>
+            <div>
+                {% if is_detail_view %}
+                    <a href="{% url 'googlechat:sequence_list' %}" class="btn btn-sm btn-outline-secondary">Back to List</a>
+                {% else %}
+                    <a href="{% url 'googlechat:sequence_list' %}" class="btn btn-sm btn-outline-secondary me-2">Manage Sequences</a>
+                    <button id="toggle-selection-btn" class="btn btn-sm btn-primary">Start Selecting</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="messages-area" id="messages-area">
+        {% if not is_detail_view %}<div id="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>{% endif %}
+        {% for msg in chat_messages %}{% include 'googlechat_manager/message_bubble.html' with msg=msg %}{% endfor %}
+    </div>
+</div>
+
+{% if not is_detail_view %}
+    <div id="selection-bar">
+        <span id="selection-count" class="fw-bold">0 selected</span>
+        <button id="action-btn" class="btn btn-success btn-sm">{% if editing_sequence %}Update Sequence{% else %}Create Sequence{% endif %}</button>
+        <button id="cancel-selection-btn" class="btn btn-outline-danger btn-sm">Cancel</button>
+    </div>
+
+    <div class="modal fade" id="nameSequenceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Name this Evidence</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><input type="text" id="sequence-title-input" class="form-control" value="{{ editing_sequence.title|default:'' }}"></div>
+                <div class="modal-footer"><button type="button" class="btn btn-primary" id="save-confirm-btn">Save</button></div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const msgArea = document.getElementById('messages-area');
+    msgArea.scrollTop = msgArea.scrollHeight;
+
+    const isDetailView = {{ is_detail_view|yesno:"true,false" }};
+    if (isDetailView) return;
+
+    const editingSequence = {{ editing_sequence.pk|default:"null" }};
+    // Use the stringified list of IDs from the view
+    const selectedIds = new Set(JSON.parse('{{ preselected_ids_json|escapejs }}'));
+
+    let currentPage = {{ page_number }};
+    let hasPreviousPage = {{ has_previous|yesno:"true,false" }};
+    let isLoading = false;
+    let selectionMode = false;
+
+    const toggleBtn = document.getElementById('toggle-selection-btn');
+    const selectionBar = document.getElementById('selection-bar');
+    const countSpan = document.getElementById('selection-count');
+    const actionBtn = document.getElementById('action-btn');
+    const saveConfirmBtn = document.getElementById('save-confirm-btn');
+    const titleInput = document.getElementById('sequence-title-input');
+
+    function initializeEditMode() {
+        if (editingSequence) {
+            selectionMode = true;
+            toggleBtn.textContent = "Stop Selecting";
+            toggleBtn.classList.add('btn-warning');
+            msgArea.classList.add('selection-active');
+            
+            // Highlight messages already visible on the page
+            document.querySelectorAll('.message-row').forEach(row => {
+                if (selectedIds.has(row.dataset.msgId)) {
+                    row.classList.add('selected');
+                }
+            });
+            updateSelectionUI();
+        }
+    }
+
+    function updateSelectionUI() {
+        if (selectedIds.size > 0) {
+            selectionBar.style.display = 'flex';
+            countSpan.textContent = `${selectedIds.size} message${selectedIds.size > 1 ? 's' : ''}`;
+        } else {
+            selectionBar.style.display = 'none';
+        }
+    }
+
+    function clearSelection() {
+        selectedIds.clear();
+        document.querySelectorAll('.message-row.selected').forEach(el => el.classList.remove('selected'));
+        updateSelectionUI();
+    }
+
+    toggleBtn.addEventListener('click', () => {
+        selectionMode = !selectionMode;
+        toggleBtn.textContent = selectionMode ? "Stop Selecting" : "Start Selecting";
+        toggleBtn.classList.toggle('btn-primary');
+        toggleBtn.classList.toggle('btn-warning');
+        msgArea.classList.toggle('selection-active');
+        if (!selectionMode) clearSelection();
+    });
+
+    document.getElementById('cancel-selection-btn').addEventListener('click', clearSelection);
+
+    msgArea.addEventListener('click', function(e) {
+        if (!selectionMode) return;
+        const row = e.target.closest('.message-row');
+        if (!row) return;
+        const msgId = row.dataset.msgId;
+        if (selectedIds.has(msgId)) {
+            selectedIds.delete(msgId);
+            row.classList.remove('selected');
+        } else {
+            selectedIds.add(msgId);
+            row.classList.add('selected');
+        }
+        updateSelectionUI();
+    });
+
+    actionBtn.addEventListener('click', () => {
+        if (selectedIds.size > 0) {
+            const modal = new bootstrap.Modal(document.getElementById('nameSequenceModal'));
+            modal.show();
+        }
+    });
+
+    saveConfirmBtn.addEventListener('click', function() {
+        const title = titleInput.value;
+        if (!title) {
+            alert("Please enter a title.");
+            return;
+        }
+
+        const url = editingSequence 
+            ? `/chat/api/sequences/${editingSequence}/update/`
+            : "{% url 'googlechat:create_sequence_ajax' %}";
+
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ title: title, message_ids: Array.from(selectedIds) })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = data.redirect_url;
+            } else {
+                alert(data.message || "An error occurred.");
+            }
+        });
+    });
+
+    msgArea.addEventListener('scroll', function() {
+        if (msgArea.scrollTop === 0 && hasPreviousPage && !isLoading) {
+            isLoading = true;
+            document.getElementById('loading-spinner').style.display = 'block';
+            fetch(`{% url 'googlechat:load_more_messages' %}?page=${currentPage - 1}`)
+                .then(response => response.json())
+                .then(data => {
+                    const oldScrollHeight = msgArea.scrollHeight;
+                    data.messages.reverse().forEach(msgData => {
+                        // Pass the set of selected IDs to the bubble creator
+                        const messageHtml = createMessageBubble(msgData, selectedIds);
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = messageHtml;
+                        msgArea.prepend(tempDiv.firstChild);
+                    });
+                    currentPage--;
+                    hasPreviousPage = data.has_previous;
+                    msgArea.scrollTop = msgArea.scrollHeight - oldScrollHeight;
+                    document.getElementById('loading-spinner').style.display = 'none';
+                    isLoading = false;
+                });
+        }
+    });
+
+    function createMessageBubble(msgData, currentSelectedIds) {
+        const isSelf = msgData.sender_name === "Louis Philippe David";
+        const rowClass = isSelf ? 'participant-right' : 'participant-left';
+        const bubbleClass = isSelf ? 'bubble-right' : 'bubble-left';
+        // Check if the new message should be selected
+        const selectedClass = currentSelectedIds.has(String(msgData.id)) ? ' selected' : '';
+
+        return `<div class="message-row ${rowClass}${selectedClass}" data-msg-id="${msgData.id}"><div class="bubble ${bubbleClass}"><div class="msg-meta">${msgData.sender_name}</div>${msgData.text_content.replace(/\\n/g, '<br>')}<div class="msg-time">${msgData.timestamp}</div></div></div>`;
+    }
+
+    initializeEditMode();
+});
+</script>
+{% endblock %}

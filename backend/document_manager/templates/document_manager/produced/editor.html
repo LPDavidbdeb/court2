@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'document_manager/css/editor.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3>Document Editor: {{ document.title }}</h3>
+    <p>Build the structure of your document below. Add children to create a hierarchy.</p>
+    
+    {% if not nodes %}
+        <div class="alert alert-info" role="alert">
+            This document has no nodes yet. Start by adding a root node.
+            <button type="button" class="btn btn-sm btn-primary ms-3 add-node-btn" id="addRootNodeBtn" 
+                    data-action-type="add_root" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Root Node</button>
+        </div>
+    {% endif %}
+
+    <div id="tree-container" class="p-3">
+        {% include "document_manager/produced/_node_tree.html" with nodes=nodes mode='edit' %}
+    </div>
+</div>
+
+{% include "document_manager/produced/_modal.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    {% include "document_manager/produced/_js.html" %}
+{% endblock %}

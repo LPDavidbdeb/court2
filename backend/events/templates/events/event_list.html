@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Events List{% endblock %}
+
+{% block extra_head %}
+<style>
+    .details-cell-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Center content vertically */
+        min-height: 90px; /* Approx height of a thumbnail + padding */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h1 class="h4 mb-0">Events</h1>
+        <a href="{% url 'events:create' %}" class="btn btn-light btn-sm">Add New Event</a>
+    </div>
+    <div class="card-body">
+        {% if events %}
+            <meta name="csrf-token" content="{{ csrf_token }}"> {# For AJAX #}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 120px;">Date</th>
+                            <th>Details (Explanation & Photos)</th>
+                            <th style="width: 200px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                            <tr>
+                                <td style="vertical-align: middle;">{{ event.date|date:"Y-m-d" }}</td>
+                                <td>
+                                    <div class="details-cell-content">
+                                        {# Explanation Section #}
+                                        <div class="editable-explanation" data-pk="{{ event.pk }}" data-url="{% url 'events:ajax_update_explanation' event.pk %}">
+                                            <span class="explanation-text">{{ event.explanation|default:"(Click to add explanation)" }}</span>
+                                        </div>
+
+                                        {# Photo Preview Section #}
+                                        {% if event.linked_photos.exists %}
+                                        <div class="mt-3 pt-2 border-top">
+                                            <div class="d-flex flex-wrap align-items-center">
+                                                {% for photo in event.linked_photos.all|slice:":5" %}
+                                                    {% if photo.file %}
+                                                        <a href="{{ photo.file.url }}" target="_blank" class="me-2 mb-1" title="{{ photo.file_name }}">
+                                                            <img src="{{ photo.file.url }}" alt="{{ photo.file_name }}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 0.25rem;">
+                                                        </a>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if event.linked_photos.count > 5 %}
+                                                    <span class="badge bg-secondary align-self-center ms-1">+{{ event.linked_photos.count|add:"-5" }} more</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    <div class="d-flex justify-content-start">
+                                        <a href="{% url 'events:detail' event.pk %}" class="btn btn-sm btn-info me-1">View</a>
+                                        <a href="{% url 'events:update' event.pk %}" class="btn btn-sm btn-primary me-1">Edit</a>
+                                        <a href="{% url 'events:delete' event.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">No events have been created yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        console.error('CSRF token meta tag not found!');
+        return;
+    }
+    const token = csrfToken.getAttribute('content');
+
+    document.querySelectorAll('.editable-explanation').forEach(cell => {
+        cell.addEventListener('click', function(event) {
+            if (cell.querySelector('textarea')) return;
+
+            const span = cell.querySelector('.explanation-text');
+            const currentExplanation = span.textContent.trim();
+            
+            const textarea = document.createElement('textarea');
+            textarea.className = 'form-control';
+            textarea.value = currentExplanation;
+            textarea.rows = 3;
+
+            cell.innerHTML = '';
+            cell.appendChild(textarea);
+            textarea.focus();
+
+            const saveChanges = () => {
+                const newExplanation = textarea.value.trim();
+                const url = cell.dataset.url;
+
+                if (newExplanation === currentExplanation) {
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                    return;
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': token
+                    },
+                    body: JSON.stringify({ explanation: newExplanation })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        cell.innerHTML = `<span class="explanation-text">${data.explanation}</span>`;
+                    } else {
+                        alert('Error updating explanation: ' + (data.error || 'Unknown error'));
+                        cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('A network error occurred. Please check the console and try again.');
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                });
+            };
+
+            textarea.addEventListener('blur', saveChanges);
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveChanges();
+                }
+                if (e.key === 'Escape') {
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

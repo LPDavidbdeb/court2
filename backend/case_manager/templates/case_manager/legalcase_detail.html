@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Case: {{ case.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Case: {{ case.title }}</h1>
+        </div>
+        <div>
+            <a href="{% url 'case_manager:contestation_create' case.pk %}" class="btn btn-primary">New Contestation</a>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Actions</div>
+        <div class="card-body">
+            <a href="{% url 'case_manager:case_export' case.pk %}" class="btn btn-outline-primary">
+                <i class="fas fa-download"></i> Mémoire Civil (Word)
+            </a>
+            <a href="{% url 'case_manager:case_export_police' case.pk %}" class="btn btn-outline-dark ms-2">
+                <i class="fas fa-file-export"></i> Plainte Policière (Word)
+            </a>
+
+            <a href="{% url 'case_manager:case_export_llm' case.pk %}" class="btn btn-outline-info ms-2">
+                <i class="fas fa-robot"></i> Export LLM (Markdown)
+            </a>
+            
+            <a href="{% url 'case_manager:case_download_zip' case.pk %}" class="btn btn-success ms-2">
+                <i class="fas fa-file-archive"></i> Télécharger Pièces (ZIP)
+            </a>
+
+            <a href="{% url 'case_manager:case_generate_production' case.pk %}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-sync"></i> Générer Table des Pièces
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Contestations
+        </div>
+        <div class="list-group list-group-flush">
+            {% for contestation in contestations %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'case_manager:contestation_detail' contestation.pk %}" class="editable-title-container flex-grow-1 text-decoration-none text-dark" data-pk="{{ contestation.pk }}">
+                        <span class="contestation-title">{{ contestation.title }}</span>
+                    </a>
+                    <button class="btn btn-sm btn-outline-secondary edit-title-btn">Edit</button>
+                </div>
+            {% empty %}
+                <div class="list-group-item">
+                    No contestations have been created for this case yet.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Table des Pièces (Production)
+        </div>
+        <div class="card-body">
+            {% if produced_exhibits %}
+                <table class="table table-striped table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col" style="width: 10%;">Label</th>
+                            <th scope="col" style="width: 15%;">Date</th>
+                            <th scope="col" style="width: 15%;">Type</th>
+                            <th scope="col">Description</th>
+                            <th scope="col" style="width: 20%;">Parties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exhibit in produced_exhibits %}
+                            <tr>
+                                <td>
+                                    {% if exhibit.public_url %}
+                                        <a href="{{ exhibit.public_url }}" target="_blank" class="text-dark text-decoration-none" title="Voir le document original">
+                                            <strong>{{ exhibit.label }}</strong> <i class="fas fa-external-link-alt small text-primary ms-1"></i>
+                                        </a>
+                                    {% else %}
+                                        <strong>{{ exhibit.label }}</strong>
+                                    {% endif %}
+                                </td>
+                                <td>{{ exhibit.date_display }}</td>
+                                <td>{{ exhibit.exhibit_type }}</td>
+                                <td style="white-space: pre-wrap;">
+                                    {% if exhibit.exhibit_type == "Citation PDF" or exhibit.exhibit_type == "Citation Courriel" or exhibit.exhibit_type == "Document Photo" %}
+                                        {{ exhibit.description|safe }}
+                                    {% else %}
+                                        {{ exhibit.description }}
+                                    {% endif %}
+                                </td>
+                                <td style="white-space: pre-wrap;">{{ exhibit.parties }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted">Aucune pièce n'a encore été générée pour ce cas. Cliquez sur "Générer Table des Pièces" pour commencer.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const caseContainer = document.querySelector('.list-group');
+
+    caseContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('edit-title-btn')) {
+            const container = e.target.previousElementSibling;
+            const titleSpan = container.querySelector('.contestation-title');
+            const currentTitle = titleSpan.textContent.trim();
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control';
+            input.value = currentTitle;
+            
+            container.innerHTML = '';
+            container.appendChild(input);
+            input.focus();
+
+            const saveTitle = () => {
+                const newTitle = input.value.trim();
+                const pk = container.dataset.pk;
+
+                if (newTitle && newTitle !== currentTitle) {
+                    fetch(`/cases/contestations/${pk}/update-title/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ title: newTitle })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            container.innerHTML = `<span class="contestation-title">${data.new_title}</span>`;
+                        } else {
+                            alert('Error: ' + data.message);
+                            container.innerHTML = `<span class="contestation-title">${currentTitle}</span>`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please try again.');
+                        container.innerHTML = `<span class="contestation-title">${currentTitle}</span>`;
+                    });
+                } else {
+                    container.innerHTML = `<span class="contestation-title">${currentTitle}</span>`;
+                }
+            };
+
+            input.addEventListener('blur', saveTitle);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveTitle();
+                } else if (e.key === 'Escape') {
+                    container.innerHTML = `<span class="contestation-title">${currentTitle}</span>`;
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

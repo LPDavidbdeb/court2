@@ -1,0 +1,10 @@
+{% load document_extras %}
+
+<div class="card my-2">
+    <div class="card-body">
+        <div class="editable-summary"
+             data-update-url="{% url 'document_manager:ajax_update_narrative_summary' narrative_pk=node.content_object.pk %}">
+            {{ node.content_object.resume|safe }}
+        </div>
+    </div>
+</div>

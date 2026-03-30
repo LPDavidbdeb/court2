@@ -1,0 +1,27 @@
+<div class="accordion" id="emailAccordion">
+    {% for email in emails %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-{{ email.pk }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ email.pk }}" aria-expanded="false" aria-controls="collapse-{{ email.pk }}">
+                    <small><strong>From:</strong> {{ email.sender|truncatechars:50 }} | <strong>Date:</strong> {{ email.date_sent|date:"Y-m-d H:i" }}</small>
+                </button>
+            </h2>
+            {# ADDED: data attributes to store the context for the JS #}
+            <div id="collapse-{{ email.pk }}" 
+                 class="accordion-collapse collapse"
+                 aria-labelledby="heading-{{ email.pk }}" 
+                 data-bs-parent="#emailAccordion"
+                 data-sender="{{ email.sender }}"
+                 data-recipient="{{ email.recipients_to }}" {# Assuming recipients_to is the primary field #}
+                 data-date-sent="{{ email.date_sent|date:"Y-m-d" }}"
+                 data-time-sent="{{ email.date_sent|date:"H\hi" }}" {# Format time as HhM #}>
+
+                <div class="accordion-body email-body-content" data-email-id="{{ email.pk }}" style="white-space: pre-wrap;">
+                    {{ email.body_plain_text|default:"(No content)" }}
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted p-3">No emails found in this thread.</p>
+    {% endfor %}
+</div>

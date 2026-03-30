@@ -1,0 +1,5 @@
+<blockquote class="mb-1">"{{ node.content_object.quote_text }}"</blockquote>
+<small class="text-muted">
+    From: {{ node.content_object.email.subject }} 
+    (Sent: {{ node.content_object.email.date_sent|date:"Y-m-d H:i" }})
+</small>

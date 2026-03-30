@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ document.title }}{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">{{ document.title }}</h1>
+            </div>
+            <div class="card-body">
+                <h5>Description</h5>
+                <div id="description-content" title="Click to edit" style="cursor:pointer;">
+                    {% if document.description %}
+                        {{ document.description|safe }}
+                    {% else %}
+                        <p class="text-muted">No description provided. Click to add one.</p>
+                    {% endif %}
+                </div>
+                <hr>
+
+                <h5>AI Analysis</h5>
+                <div class="row mb-2 align-items-center">
+                    <div class="col-auto">
+                        <select id="persona-select" class="form-select">
+                            <option value="forensic_clerk">🔍 Greffier Forensique (Description)</option>
+                            <option value="official_scribe">📜 Scribe Officiel (Transcription)</option>
+                            <option value="summary_clerk">📝 Secrétaire (Résumé)</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button id="analyze-btn" onclick="analyzeDocument('photo', {{ document.pk }})" class="btn btn-outline-primary">
+                            🤖 Analyser
+                        </button>
+                        <button id="clear-btn" onclick="clearAnalysis('photo', {{ document.pk }})" class="btn btn-outline-danger ms-2">
+                            🗑️ Effacer
+                        </button>
+                    </div>
+                </div>
+                <div id="analysis-result" class="mt-2 p-3 bg-light rounded" style="white-space: pre-wrap;">{{ document.ai_analysis|default:"Aucune analyse." }}</div>
+                <hr>
+
+                <h5>Associated Photos</h5>
+                <div class="row">
+                    {% for photo in document.photos.all %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <a href="{{ photo.get_absolute_url }}">
+                                    <img src="{{ photo.file.url }}" class="card-img-top" alt="{{ photo.file_name }}">
+                                </a>
+                                <div class="card-footer text-muted">
+                                    <small>{{ photo.file_name }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p>There are no photos associated with this document.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'photos:document_update' document.pk %}" class="btn btn-primary">Edit</a>
+                <a href="{% url 'photos:document_delete' document.pk %}" class="btn btn-danger">Delete</a>
+                <a href="{% url 'photos:document_list' %}" class="btn btn-secondary">Back to List</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+<script>
+function analyzeDocument(docType, pk) {
+    const button = document.getElementById('analyze-btn');
+    const resultDiv = document.getElementById('analysis-result');
+    // 1. Get the selected Persona
+    const persona = document.getElementById('persona-select').value;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    const originalButtonText = button.innerHTML;
+    button.innerHTML = 'Analyse en cours...';
+    button.disabled = true;
+
+    // 2. Send as POST request with JSON body
+    fetch(`/ai/analyze/${docType}/${pk}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ persona: persona }) // <--- Sending the choice
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            resultDiv.textContent = data.analysis;
+        } else {
+            resultDiv.textContent = 'Error: ' + data.message;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultDiv.textContent = 'An unexpected error occurred.';
+    })
+    .finally(() => {
+        button.innerHTML = originalButtonText;
+        button.disabled = false;
+    });
+}
+
+function clearAnalysis(docType, pk) {
+    if (!confirm("Are you sure you want to delete this AI analysis?")) return;
+
+    const resultDiv = document.getElementById('analysis-result');
+    const button = document.getElementById('clear-btn');
+    
+    button.disabled = true;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    fetch(`/ai/clear/${docType}/${pk}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            resultDiv.textContent = "Aucune analyse.";
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An unexpected error occurred.');
+    })
+    .finally(() => {
+        button.disabled = false;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const descriptionContent = document.getElementById('description-content');
+    let isEditing = false;
+
+    descriptionContent.addEventListener('click', function () {
+        if (isEditing) return;
+        isEditing = true;
+
+        tinymce.init({
+            target: descriptionContent,
+            inline: true,
+            menubar: false,
+            plugins: 'advlist autolink lists',
+            toolbar: 'undo redo | bold italic underline | bullist numlist',
+            setup: function (editor) {
+                editor.on('init', function () {
+                    editor.focus();
+                });
+                editor.on('blur', function () {
+                    saveContent(editor);
+                });
+                editor.on('remove', function() {
+                    isEditing = false;
+                });
+            }
+        });
+    });
+
+    function saveContent(editor) {
+        const newContent = editor.getContent();
+        
+        if (!editor.isDirty()) {
+            editor.destroy();
+            return;
+        }
+
+        const documentId = {{ document.pk }};
+        const csrfToken = document.querySelector('[name=csrf-token]').content;
+
+        fetch(`/photos/document/${documentId}/ajax_update_description/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ description: newContent })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Error saving description: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+        })
+        .finally(() => {
+            editor.destroy();
+        });
+    }
+});
+</script>
+{% endblock %}

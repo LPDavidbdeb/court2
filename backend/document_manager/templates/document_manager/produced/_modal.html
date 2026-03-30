@@ -1,0 +1,109 @@
+{% load static %}
+{% load crispy_forms_tags %}
+
+{# Modal for Adding/Editing Nodes #}
+<div class="modal fade" id="addNodeModal" tabindex="-1" aria-labelledby="addNodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl"> {# Increased size for AI prompt #}
+        <div class="modal-content">
+            <form id="addNodeForm" method="post" action="{% url 'document_manager:add_library_node_ajax' document_pk=document.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="reference_node_pk" id="id_reference_node_pk">
+                <input type="hidden" name="action_type" id="id_action_type">
+                <input type="hidden" name="content_type_id" id="id_content_type_id">
+                <input type="hidden" name="object_id" id="id_object_id">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addNodeModalLabel">Add New Node</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="id_item" class="form-label requiredField">Node Title<span class="asteriskField">*</span></label>
+                        <input type="text" name="item" class="textinput textInput form-control" required id="id_item">
+                    </div>
+                    <hr>
+
+                    <ul class="nav nav-tabs" id="addNodeTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="create-new-tab" data-bs-toggle="tab" data-bs-target="#create-new-tab-pane" type="button" role="tab">Create New Statement</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="link-existing-tab" data-bs-toggle="tab" data-bs-target="#link-existing-tab-pane" type="button" role="tab">Link Existing Evidence</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3" id="addNodeTabContent">
+                        <div class="tab-pane fade show active" id="create-new-tab-pane" role="tabpanel">
+
+                            <div class="accordion" id="aiPromptAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingOne">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                            Edit AI Persona Prompt
+                                        </button>
+                                    </h2>
+                                    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#aiPromptAccordion">
+                                        <div class="accordion-body">
+                                            <textarea id="ai-prompt-textarea" class="form-control" rows="10"></textarea>
+                                            <small class="form-text text-muted">You can tweak the AI's instructions here before correcting the text.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 mt-3">
+                                <label for="id_text" class="form-label">Statement Text</label>
+                                <textarea name="text" cols="40" rows="10" class="textarea form-control" id="id_text"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="link-existing-tab-pane" role="tabpanel">
+                            <div class="mb-3">
+                                <label for="evidence-search-input" class="form-label">Search Evidence</label>
+                                <input type="search" class="form-control" id="evidence-search-input" placeholder="Search by keyword in narratives, quotes, events...">
+                            </div>
+                            <div id="evidence-search-results" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                                {# Search results will be injected here by JavaScript #}
+                            </div>
+                            <div id="selected-evidence-display" class="mt-3" style="display: none;">
+                                <h6>Selected Evidence:</h6>
+                                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                                    <span id="selected-evidence-text"></span>
+                                    <button type="button" class="btn-close" id="clear-selected-evidence"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" id="correct-text-btn">Correct with AI</button>
+                    <button type="submit" class="btn btn-primary">Add Node</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Modal for Delete Confirmation #}
+<div class="modal fade" id="deleteNodeConfirmModal" tabindex="-1" aria-labelledby="deleteNodeConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteNodeConfirmModalLabel">Confirm Node Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete "<strong id="nodeToDeleteItem"></strong>"?
+                <p class="text-danger">This will also delete all its child nodes.</p>
+                <p class="text-muted small">User-created statements linked only to these nodes will also be deleted. Imported evidence will remain untouched.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteNodeBtn">Delete Node</button>
+            </div>
+        </div>
+    </div>
+</div>

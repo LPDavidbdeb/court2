@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ trame.titre }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Design Mobile-First pour le Scrollytelling */
+    .story-timeline {
+        position: relative;
+        padding-left: 20px;
+        margin-left: 10px;
+        border-left: 3px solid #e9ecef;
+    }
+
+    .story-node {
+        position: relative;
+        margin-bottom: 3rem;
+        padding-left: 20px;
+    }
+
+    /* Le point sur la ligne de temps */
+    .story-node::before {
+        content: "";
+        position: absolute;
+        left: -29px;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        border: 4px solid #6c757d;
+        z-index: 2;
+    }
+
+    /* Couleurs contextuelles selon le type de preuve */
+    .type-pdf .story-node::before { border-color: #dc3545; } /* ROUGE */
+    .type-statement .story-node::before { border-color: #fd7e14; } /* ORANGE */
+    .type-email .story-node::before { border-color: #ffc107; } /* JAUNE */
+
+    .card-evidence {
+        border-left: 5px solid transparent;
+        transition: transform 0.2s;
+    }
+
+    .type-pdf .card-evidence { border-left-color: #dc3545; background-color: #fff5f5; }
+    .type-statement .card-evidence { border-left-color: #fd7e14; background-color: #fff9f2; }
+    .type-email .card-evidence { border-left-color: #ffc107; background-color: #fffff0; }
+
+    .date-badge {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="text-center mb-5">
+        <h1 class="display-6 fw-bold">{{ trame.titre }}</h1>
+        <p class="lead text-muted">{{ trame.resume }}</p>
+        <div class="d-flex justify-content-center gap-2 mt-3">
+            <span class="badge bg-danger">Sécurité</span>
+            <span>&rarr;</span>
+            <span class="badge bg-warning text-dark">Routine</span>
+            <span>&rarr;</span>
+            <span class="badge bg-light text-dark border">Disponibilité</span>
+        </div>
+    </div>
+
+    <div class="story-timeline">
+
+        {% for item in timeline %}
+        <div class="story-node type-{{ item.type }}">
+
+            <span class="date-badge text-secondary">
+                {{ item.date|date:"d F Y" }}
+            </span>
+
+            <div class="card card-evidence shadow-sm">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">
+                            {% if item.type == 'pdf' %}
+                                <i class="bi bi-shield-exclamation text-danger"></i> Motif de Sécurité (Absolu)
+                            {% elif item.type == 'statement' %}
+                                <i class="bi bi-calendar-check text-warning"></i> Motif de Routine (Relatif)
+                            {% elif item.type == 'email' %}
+                                <i class="bi bi-chat-left-text text-secondary"></i> Motif Subsidiaire
+                            {% endif %}
+                        </h5>
+                    </div>
+
+                    <blockquote class="blockquote fs-6 my-3">
+                        <p class="mb-0">"{{ item.content|truncatechars:300 }}"</p>
+                    </blockquote>
+
+                    <footer class="blockquote-footer mt-2">
+                        {{ item.source }}
+                    </footer>
+
+                    {% if item.type == 'pdf' %}
+                        <div class="alert alert-danger py-2 small mt-3 mb-0">
+                            <strong>Implique :</strong> Une situation de danger imminent (Art. 38).
+                        </div>
+                    {% elif item.type == 'email' %}
+                         <div class="alert alert-warning py-2 small mt-3 mb-0">
+                            <strong>Note :</strong> Ce motif contredit l'urgence invoquée précédemment.
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+            <div class="alert alert-info">Aucune preuve n'a encore été ajoutée à cette trame.</div>
+        {% endfor %}
+
+    </div>
+
+    <div class="mt-5 p-4 bg-light rounded border border-secondary text-center">
+        <h4><i class="bi bi-arrow-down-circle"></i> Le Glissement est Prouvé</h4>
+        <p>
+            On ne remplace pas une vérité exécutoire (le danger de 2013) par des motifs facilement réfutables (la routine de 2015).
+            <br><strong>La nécessité d'invoquer ces nouveaux motifs prouve l'absence de fondement du premier.</strong>
+        </p>
+    </div>
+
+</div>
+{% endblock %}

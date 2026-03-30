@@ -1,0 +1,5 @@
+# requirements-dev.txt (Development Dependencies)
+
+-r requirements.txt
+mysqlclient  # Added for local MySQL development
+# Add any other dev-only packages here, e.g., ipython, coverage

@@ -1,0 +1,9 @@
+<div class="statement-content editable-item p-3 border rounded mt-3" data-node-id="{{ node.pk }}">
+    <div class="editable-text" id="text-{{ node.pk }}">
+        {{ node.content_object.text|safe }}
+    </div>
+
+    <div class="ai-actions mt-2" style="display: none;">
+        <button class="btn btn-sm btn-info ai-correct-btn" data-node-id="{{ node.pk }}">Correct with AI</button>
+    </div>
+</div>

@@ -1,0 +1,66 @@
+{% load evidence_tags %}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Evidence Workbench</h5>
+    </div>
+    <div class="card-body">
+        <h6>Events</h6>
+        {% if is_narrative_saved %}
+            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#selectEventsModal">
+                Select Events
+            </button>
+        {% endif %}
+        <ul id="event-selection-list" class="list-group mb-2">
+            {% for event in associated_events %}
+                {% include 'argument_manager/_evidence_list_item.html' with evidence=event %}
+            {% endfor %}
+        </ul>
+        <hr>
+
+        <h6>Email Quotes</h6>
+         {% if is_narrative_saved %}
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#selectEmailQuotesModal">
+                Add/Select Email Quotes
+            </button>
+        {% else %}
+            <p class="form-text small">Save the narrative to enable adding quotes.</p>
+        {% endif %}
+        <ul id="email-quote-list" class="list-group mb-2">
+            {% for quote in associated_email_quotes %}
+                 {% include 'argument_manager/_evidence_list_item.html' with evidence=quote %}
+            {% endfor %}
+        </ul>
+        <hr>
+
+        <h6>PDF Quotes</h6>
+        {% if is_narrative_saved %}
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#selectPdfQuotesModal">
+                Add/Select PDF Quotes
+            </button>
+        {% else %}
+            <p class="form-text small">Save the narrative to enable adding quotes.</p>
+        {% endif %}
+        <ul id="pdf-quote-list" class="list-group mb-2">
+            {% for quote in associated_pdf_quotes %}
+                {% include 'argument_manager/_evidence_list_item.html' with evidence=quote %}
+            {% endfor %}
+        </ul>
+
+        <hr>
+
+        <h6>Photo Documents</h6>
+        {% if is_narrative_saved %}
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#selectPhotoDocumentsModal">
+                Select Photo Documents
+            </button>
+        {% else %}
+            <p class="form-text small">Save the narrative to enable adding photo documents.</p>
+        {% endif %}
+        <ul id="photo-document-list" class="list-group mb-2">
+            {% for doc in associated_photo_documents %}
+                {% include 'argument_manager/_evidence_list_item.html' with evidence=doc %}
+            {% endfor %}
+        </ul>
+    </div>
+</div>

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Event: {{ event.get_display_id }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Event: {{ event.get_display_id }}</h1>
+        <div>
+            {% if previous_event %}
+                <a href="{% url 'events:detail' pk=previous_event.pk %}" class="btn btn-outline-secondary">Previous</a>
+            {% endif %}
+            {% if next_event %}
+                <a href="{% url 'events:detail' pk=next_event.pk %}" class="btn btn-outline-secondary">Next</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <p class="card-text">
+                <strong>Date:</strong>
+                {{ event.date|date:"Y-m-d" }}
+            </p>
+            <div class="card-text">
+                <strong>Explanation:</strong>
+                <div class="editable-explanation p-2" 
+                     data-url="{% url 'events:ajax_update_explanation' pk=event.pk %}">
+                    
+                    <span class="explanation-display">{{ event.explanation|linebreaksbr|default:"(Click to add explanation)" }}</span>
+                    
+                    <textarea class="form-control explanation-editor" style="display:none;" rows="6">{{ event.explanation }}</textarea>
+                </div>
+            </div>
+
+            <h6 class="card-subtitle mb-2 text-muted mt-3">Linked Items:</h6>
+            <div class="mb-2">
+                <strong>Photos:</strong>
+                <div class="d-flex flex-wrap">
+                {% for photo in event.linked_photos.all %}
+                    <div class="me-2 mb-2">
+                        <a href="{{ photo.file.url }}" target="_blank">
+                            <img src="{{ photo.file.url }}" alt="{{ photo.file_name }}" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
+                        </a>
+                    </div>
+                {% empty %}
+                    <span class="text-muted">None</span>
+                {% endfor %}
+                </div>
+            </div>
+            {% if event.linked_email %}
+            <div class="mb-2">
+                <strong>Email:</strong>
+                <span class="badge bg-secondary me-1">{{ event.linked_email.subject|default:"Unnamed Email" }}</span>
+                {% if event.email_quote %}
+                    <blockquote class="mt-2">"{{ event.email_quote }}"</blockquote>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <hr>
+            <a href="{% url 'events:list' %}" class="btn btn-secondary me-2">Back to List</a>
+            <a href="{% url 'events:update' pk=event.pk %}" class="btn btn-warning me-2">Edit Event</a>
+            <a href="{% url 'events:delete' pk=event.pk %}" class="btn btn-danger">Delete Event</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = '{{ csrf_token }}';
+    const container = document.querySelector('.editable-explanation');
+    
+    if (container) {
+        const display = container.querySelector('.explanation-display');
+        const editor = container.querySelector('.explanation-editor');
+        let originalValue = editor.value;
+
+        display.addEventListener('click', () => {
+            originalValue = editor.value;
+            display.style.display = 'none';
+            editor.style.display = 'block';
+            editor.focus();
+        });
+
+        editor.addEventListener('blur', () => {
+            const newValue = editor.value;
+            const url = container.dataset.url;
+
+            if (newValue === originalValue) {
+                editor.style.display = 'none';
+                display.style.display = 'block';
+                return;
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ explanation: newValue })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    editor.value = data.explanation;
+                    display.innerHTML = data.explanation.replace(/\n/g, '<br>') || '(Click to add explanation)';
+                } else {
+                    alert('Error: ' + (data.error || 'Could not save changes.'));
+                    editor.value = originalValue;
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                alert('An unexpected error occurred. Check the console for details.');
+                editor.value = originalValue;
+            })
+            .finally(() => {
+                editor.style.display = 'none';
+                display.style.display = 'block';
+            });
+        });
+
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                editor.value = originalValue;
+                editor.blur();
+            }
+        });
+    } 
+});
+</script>
+{% endblock %}

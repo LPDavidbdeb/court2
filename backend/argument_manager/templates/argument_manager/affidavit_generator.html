@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load quote_filters %}
+{% load evidence_tags %}
+
+{% block title %}Générateur d'Affidavit: {{ narrative.titre }}{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h3 mb-0">Affidavit pour la Trame Narrative: "{{ narrative.titre }}"</h1>
+        </div>
+        <div class="card-body">
+
+            <h2 class="h5 border-bottom pb-2 mb-3">1. Allégations Contredites</h2>
+            <ul class="list-group mb-4">
+                {% for claim in claims %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center" id="allegation-row-{{ claim.obj.pk }}">
+                        <span>
+                            <span class="badge bg-secondary me-2">{{ claim.id }}</span>
+                            {{ claim.text }}
+                        </span>
+                        <button class="btn btn-danger btn-sm remove-allegation"
+                                data-allegation-id="{{ claim.obj.pk }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <h2 class="h5 border-bottom pb-2 mb-3">2. Argumentaire</h2>
+            <div class="card card-body bg-light mb-4">
+                <div id="summary-content" title="Click to edit" style="cursor:pointer;">{{ narrative.resume | safe }}</div>
+            </div>
+
+            <h2 class="h5 border-bottom pb-2 mb-3">3. Table des Pièces</h2>
+            <table class="table table-bordered table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Pièce</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exhibit in exhibits %}
+                        <tr id="exhibit-row-{{ exhibit.type }}-{{ exhibit.evidence_obj.pk }}">
+                            <td>
+                                <strong>{{ exhibit.main_id }}</strong>
+                            </td>
+                            <td>{{ exhibit.type_fr }}</td>
+                            <td><a href="#exhibit-card-{{ exhibit.type }}-{{ exhibit.evidence_obj.pk }}">{{ exhibit.title }}</a></td>
+                            <td>{{ exhibit.date|date:"Y-m-d" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h2 class="h5 border-bottom pb-2 mt-5 mb-3">4. Contenu des Pièces</h2>
+            {% for exhibit in exhibits %}
+                <div class="card mb-4" id="exhibit-card-{{ exhibit.type }}-{{ exhibit.evidence_obj.pk }}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="h6 mb-0">Pièce {{ exhibit.main_id }}: {{ exhibit.title }} ({{ exhibit.type_fr }})</h3>
+                    </div>
+                    <div class="card-body p-0"> {# Removed padding for flush list #}
+                        <ul class="list-group list-group-flush">
+                            {% if exhibit.type == 'PDFDocument' or exhibit.type == 'Email' %}
+                                {% for item in exhibit.items %}
+                                    {% include 'argument_manager/_evidence_list_item.html' with evidence=item.obj %}
+                                {% endfor %}
+                            {% elif exhibit.type == 'Event' or exhibit.type == 'PhotoDocument' %}
+                                {% include 'argument_manager/_evidence_list_item.html' with evidence=exhibit.evidence_obj %}
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Data for our custom TinyMCE plugin
+        window.narrativeData = {
+            events: [
+                {% for event in narrative.evenements.all %}
+                    {
+                        title: '{{ event.date|date:"Y-m-d" }}: {{ event.explanation|truncatewords:10|escapejs }}',
+                        text: '{{ event.explanation|escapejs }}',
+                        url: '{% url "events:detail" event.pk %}'
+                    }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            emailQuotes: [
+                {% for quote in narrative.citations_courriel.all %}
+                    {
+                        title: '{{ quote.quote_text|after_colon|truncatewords:10|escapejs }}',
+                        text: '{{ quote.quote_text|escapejs }}',
+                        url: '{% url "email_manager:thread_detail" quote.email.thread.pk %}'
+                    }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            pdfQuotes: [
+                {% for quote in narrative.citations_pdf.all %}
+                    {
+                        title: '{{ quote.quote_text|after_colon|truncatewords:10|escapejs }}',
+                        text: '{{ quote.quote_text|escapejs }}',
+                        url: '{% url "pdf_manager:pdf_detail" quote.pdf_document.pk %}'
+                    }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        };
+    </script>
+    <script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+    <script src="{% static 'js/custom_inserter_plugin.js' %}"></script> 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const summaryContent = document.getElementById('summary-content');
+            let isEditing = false; // Flag to prevent re-initializing the editor on clicks within it.
+
+            // 1. The Trigger: A click event on the static element.
+            summaryContent.addEventListener('click', function () {
+                if (isEditing) {
+                    return;
+                }
+                isEditing = true;
+
+                // 2. The Transformation: Initialize TinyMCE in inline mode on the div.
+                tinymce.init({
+                    target: summaryContent,
+                    inline: true,
+                    menubar: false,
+                    plugins: 'advlist autolink lists table custom_inserter', 
+                    toolbar: 'undo redo | bold italic underline | bullist numlist | custom_inserter | table', 
+                    setup: function (editor) {
+                        // Focus the editor as soon as it's ready.
+                        editor.on('init', function () {
+                            editor.focus();
+                        });
+
+                        // 3. The Save Event: Triggered when the editor loses focus (blur).
+                        editor.on('blur', function () {
+                            saveContent(editor);
+                        });
+                        
+                        // When the editor is removed, reset the flag to allow editing again.
+                        editor.on('remove', function() {
+                            isEditing = false;
+                        });
+                    }
+                });
+            });
+
+            function saveContent(editor) {
+                const newContent = editor.getContent();
+                
+                // Only save if content has actually changed.
+                if (!editor.isDirty()) {
+                    editor.destroy(); // Still destroy to revert to a static div.
+                    return;
+                }
+
+                const narrativeId = {{ narrative.pk }};
+                const csrfToken = document.querySelector('[name=csrf-token]').content;
+
+                // 4. The Server Communication: Send the new content via Fetch API.
+                fetch(`/arguments/${narrativeId}/ajax_update_summary/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ resume: newContent })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 5. The Confirmation: On success, the editor is destroyed, and the div's
+                    // content is aupdatessfully updated. If there's an error, we alert the user.
+                    if (data.success) {
+                        // Content is visually updated by TinyMCE, no action needed here.
+                    } else {
+                        alert('Error saving summary: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An unexpected error occurred.');
+                })
+                .finally(() => {
+                    // This ensures the editor is removed and the div reverts to static,
+                    // completing the "disappear on blur" effect.
+                    editor.destroy();
+                });
+            }
+
+            document.querySelectorAll('.remove-allegation').forEach(button => {
+                button.addEventListener('click', function() {
+                    const allegationId = this.dataset.allegationId;
+                    const narrativeId = {{ narrative.pk }};
+                    const csrfToken = document.querySelector('[name=csrf-token]').content;
+
+                    if (confirm('Are you sure you want to remove this allegation from the narrative?')) {
+                        fetch(`/arguments/${narrativeId}/ajax_remove_allegation/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({ 
+                                allegation_id: allegationId 
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.getElementById(`allegation-row-${allegationId}`).remove();
+                            } else {
+                                alert('Error removing allegation: ' + data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An unexpected error occurred.');
+                        });
+                    }
+                });
+            });
+
+            document.body.addEventListener('click', function(e) {
+                const button = e.target.closest('.remove-evidence-btn');
+                if (button) {
+                    e.preventDefault();
+                    const evidenceId = button.dataset.evidenceId;
+                    const evidenceType = button.dataset.evidenceType;
+                    const narrativeId = {{ narrative.pk }};
+                    const csrfToken = document.querySelector('[name=csrf-token]').content;
+
+                    if (confirm('Are you sure you want to remove this item from the narrative?')) {
+                        fetch(`/arguments/${narrativeId}/ajax_remove_evidence/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({ 
+                                evidence_id: evidenceId,
+                                evidence_type: evidenceType
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const itemToRemove = document.getElementById(`evidence-item-${evidenceId}`);
+                                if (itemToRemove) {
+                                    const list = itemToRemove.parentElement;
+                                    const card = itemToRemove.closest('.card.mb-4');
+                                    
+                                    itemToRemove.remove(); // Remove the <li>
+
+                                    // If the list inside the card is now empty, remove the whole card and its table row.
+                                    if (list && list.children.length === 0) {
+                                        if (card) {
+                                            card.remove();
+                                            
+                                            const cardIdParts = card.id.split('-');
+                                            const exhibitType = cardIdParts[2];
+                                            const exhibitPk = cardIdParts[3];
+                                            const tableRowId = `exhibit-row-${exhibitType}-${exhibitPk}`;
+                                            const tableRow = document.getElementById(tableRowId);
+                                            if (tableRow) {
+                                                tableRow.remove();
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                alert('Error removing item: ' + data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An unexpected error occurred.');
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}

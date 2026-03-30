@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Upload Photo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>Upload a New Photo</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form.file|as_crispy_field }}
+                        <img id="image-preview" src="#" alt="Image Preview" class="img-fluid mt-2" style="display: none; max-height: 300px;"/>
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.file_name|as_crispy_field }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form.photo_type|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.artist|as_crispy_field }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form.datetime_original|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.gps_latitude|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.gps_longitude|as_crispy_field }}
+                    </div>
+                </div>
+
+                <div id="event-fields-wrapper" class="mt-4 border-top pt-3" style="display: none;">
+                    <h5>Create New Event (Optional)</h5>
+                    <p class="text-muted">Fill out these fields to create a new event and link this photo to it.</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.event_date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.event_explanation|as_crispy_field }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Upload and Process</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const photoTypeSelect = document.getElementById('id_photo_type');
+    const eventFieldsWrapper = document.getElementById('event-fields-wrapper');
+    // CORRECTED: Use the actual string from the dropdown option
+    const eventTypeName = 'life events'; 
+
+    function toggleEventFields() {
+        const selectedOption = photoTypeSelect.options[photoTypeSelect.selectedIndex];
+        if (selectedOption && selectedOption.text.toLowerCase() === eventTypeName) {
+            eventFieldsWrapper.style.display = 'block';
+        } else {
+            eventFieldsWrapper.style.display = 'none';
+        }
+    }
+
+    toggleEventFields();
+    photoTypeSelect.addEventListener('change', toggleEventFields);
+
+    const fileInput = document.getElementById('id_file');
+    const imagePreview = document.getElementById('image-preview');
+
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            }
+            
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+    });
+});
+</script>
+{% endblock %}

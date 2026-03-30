@@ -1,0 +1,84 @@
+# --- Root .gitignore ---
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Django
+*.log
+db.sqlite3
+/backend/media/
+/backend/staticfiles/
+/backend/storage/
+/backend/louisphilippe_auth.token/
+/backend/flickrapi_auth.token/
+/backend/cchic_auth.token/
+
+# Virtualenv
+.venv/
+
+# Project Data
+storage/
+
+# Secrets & Environment
+*.env
+*.env.*
+! .env.example
+token.json
+storage/credentials/gmail_desktop_client.json
+chat_token.json
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Notebooks & Data
+*.ipynb
+*.pickle
+*.pkl
+*.csv
+*.csv.gz
+
+# Database Backups & JSON Dumps
+*.sql
+*.json
+!package.json
+!tsconfig.json
+!components.json
+!composer.json
+datadump.json
+datadump_cleaned.json
+data_dump_for_postgres.json
+database_dump.json
+*_dump.json
+*_backup.json
+
+# --- Node.js / Frontend ---
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+build/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Vite specific
+.vite/
+frontend/.vite/

@@ -1,0 +1,90 @@
+{% load document_extras %}
+
+{# Add the CSS classes to the main li element #}
+<li class="list-group-item library-node-item node-depth-{{ node.depth }} node-type-{{ node.content_type.model|default:'none' }}" data-node-id="{{ node.pk }}" data-node-depth="{{ node.depth }}" data-node-item="{{ node.item }}">
+    <div class="d-flex justify-content-between align-items-start">
+        {# INCREASED PADDING: Multiply by 40px for more pronounced indentation #}
+        <div class="node-content flex-grow-1 me-3" style="padding-left: {{ node.depth|add:"-1"|multiply:40 }}px;">
+            {% if node.content_object %}
+                {% with content_type_model=node.content_type.model %}
+                    {# 1. Handle TrameNarrative #}
+                    {% if content_type_model == 'tramenarrative' %}
+                        {% include "document_manager/produced/_trame_narrative_node.html" with node=node %}
+                    
+                    {# 2. Handle EmailQuote #}
+                    {% elif content_type_model == 'quote' and 'email_manager' in node.content_type.app_label %}
+                        <blockquote class="mb-1">"{{ node.content_object.quote_text }}"</blockquote>
+                        <small class="text-muted">
+                            From: {{ node.content_object.email.subject }} 
+                            (Sent: {{ node.content_object.email.date_sent|date:"Y-m-d H:i" }})
+                        </small>
+
+                    {# 3. Handle PDFQuote #}
+                    {% elif content_type_model == 'quote' and 'pdf_manager' in node.content_type.app_label %}
+                        <blockquote class="mb-1">"{{ node.content_object.quote_text }}"</blockquote>
+                        <small class="text-muted">
+                            From: {{ node.content_object.pdf_document.title }} 
+                            (Page: {{ node.content_object.page_number }})
+                        </small>
+
+                    {# 4. Handle PhotoDocument #}
+                    {% elif content_type_model == 'photodocument' %}
+                        {{ node.content_object.title }}
+                        {% if node.content_object.description %}
+                            <p class="text-muted small">{{ node.content_object.description|safe|linebreaksbr }}</p>
+                        {% endif %}
+
+                    {# 5. Handle Event #}
+                    {% elif content_type_model == 'event' %}
+                        <p>{{ node.content_object.explanation }}</p>
+                        <div class="d-flex flex-wrap">
+                            {% for photo in node.content_object.linked_photos.all %}
+                                <a href="{{ photo.file.url }}" target="_blank" class="me-2 mb-2">
+                                    <img src="{{ photo.file.url }}" alt="Thumbnail for {{ photo.file_name }}" class="img-thumbnail" style="max-height: 80px; max-width: 80px;">
+                                </a>
+                            {% endfor %}
+                        </div>
+
+                    {# 6. Handle Statement (and other text-based objects) #}
+                    {% elif node.content_object.text %}
+                        {{ node.content_object.text|safe|linebreaksbr }}
+                    
+                    {# 7. Fallback for any other content type #}
+                    {% else %}
+                         <span class="text-muted fst-italic">{{ node.item }} (ID: {{ node.pk }}) - No displayable content</span>
+                    {% endif %}
+                {% endwith %}
+            {% else %}
+                <span class="text-muted fst-italic">{{ node.item }} (ID: {{ node.pk }}) - No content</span>
+            {% endif %}
+        </div>
+        <div class="node-actions btn-group btn-group-sm flex-shrink-0" role="group">
+            <button type="button" class="btn btn-outline-primary add-node-btn" data-action-type="add_child" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Child</button>
+            
+            {% if node.depth > 1 %}
+            <div class="btn-group" role="group">
+                <button id="btnGroupDrop1-{{ node.pk }}" type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    Add Sibling
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1-{{ node.pk }}">
+                    <li><a class="dropdown-item add-node-btn" href="#" data-action-type="add_sibling_left" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Sibling (Left)</a></li>
+                    <li><a class="dropdown-item add-node-btn" href="#" data-action-type="add_sibling_right" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Sibling (Right)</a></li>
+                </ul>
+            </div>
+            <button type="button" class="btn btn-outline-primary add-node-btn" data-action-type="add_parent" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Parent</button>
+            <button type="button" class="btn btn-outline-danger delete-node-btn" 
+                    data-node-id="{{ node.pk }}" 
+                    data-node-item="{{ node.item }}"
+                    data-bs-toggle="modal" data-bs-target="#deleteNodeConfirmModal">Delete</button>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if node.get_children %}
+        <ul class="list-unstyled mt-2">
+            {% for child in node.get_children %}
+                {% include "document_manager/produced/_node.html" with node=child %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>

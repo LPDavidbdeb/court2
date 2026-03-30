@@ -1,0 +1,19 @@
+{# /document_manager/templates/document_manager/partials/evidence/_email_quote_display.html #}
+
+<blockquote class="blockquote border-start border-4 ps-3 mb-3">
+    <p class="mb-0 fst-italic">"{{ evidence.quote_text }}"</p>
+</blockquote>
+
+<div class="metadata text-muted small ps-3">
+    <div class="d-flex justify-content-between">
+        <span>
+            <strong>De:</strong> {{ evidence.email.sender }}
+            <strong class="ms-3">À:</strong> {{ evidence.email.recipients_to }}
+        </span>
+        <span>
+            {% if evidence.email.date_sent %}
+                {{ evidence.email.date_sent|date:"d M Y, H:i" }}
+            {% endif %}
+        </span>
+    </div>
+</div>

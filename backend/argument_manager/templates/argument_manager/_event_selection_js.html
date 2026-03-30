@@ -1,0 +1,71 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectEventsModal = document.getElementById('selectEventsModal');
+    const eventsModalBody = document.getElementById('events-modal-body');
+    const saveEventChangesBtn = document.getElementById('save-event-changes-btn');
+    const eventsDisplayList = document.getElementById('events-display-list');
+    const narrativeId = {{ narrative.pk|default:"null" }};
+    const updateUrlTemplate = "{% url 'argument_manager:ajax_update_narrative_events' 0 %}";
+
+    let currentSelectedEventIds = [];
+
+    selectEventsModal.addEventListener('show.bs.modal', function () {
+        currentSelectedEventIds = Array.from(eventsDisplayList.querySelectorAll('a')).map(a => a.href.split('/').slice(-2, -1)[0]);
+
+        fetch("{% url 'argument_manager:ajax_get_events_list' %}")
+            .then(response => response.text())
+            .then(html => {
+                eventsModalBody.innerHTML = html;
+                currentSelectedEventIds.forEach(id => {
+                    const checkbox = eventsModalBody.querySelector(`.event-select-checkbox[value="${id}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            });
+    });
+
+    saveEventChangesBtn.addEventListener('click', function() {
+        if (!narrativeId) {
+            console.error("Narrative ID is missing.");
+            return;
+        }
+        const selectedCheckboxes = eventsModalBody.querySelectorAll('.event-select-checkbox:checked');
+        const newSelectedEventIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        
+        const url = updateUrlTemplate.replace('/0/', `/${narrativeId}/`);
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ event_ids: newSelectedEventIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                eventsDisplayList.innerHTML = '';
+                if (newSelectedEventIds.length > 0) {
+                    selectedCheckboxes.forEach(checkbox => {
+                        const eventId = checkbox.value;
+                        const labelHtml = checkbox.closest('tr').querySelector('label').innerHTML;
+                        const link = document.createElement('a');
+                        link.href = `/events/${eventId}/`;
+                        link.className = 'list-group-item list-group-item-action';
+                        link.innerHTML = labelHtml.replace(/<strong.*?>/g, '').replace(/<\/strong>/g, '').trim().split(' ').slice(0, 5).join(' ') + '...';
+                        eventsDisplayList.appendChild(link);
+                    });
+                } else {
+                    const noEventsItem = document.createElement('div');
+                    noEventsItem.className = 'list-group-item text-muted';
+                    noEventsItem.textContent = 'No events linked.';
+                    eventsDisplayList.appendChild(noEventsItem);
+                }
+                bootstrap.Modal.getInstance(selectEventsModal).hide();
+            } else {
+                alert('Error updating events: ' + data.error);
+            }
+        });
+    });
+});
+</script>

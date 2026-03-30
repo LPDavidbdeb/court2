@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Create New Legal Case{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Create a New Legal Case</h1>
+    <p>A Legal Case is the top-level container for all related contestations and evidence.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary mt-3">Save Case</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+<div class="card my-2">
+    <div class="card-body">
+        <blockquote class="blockquote mb-0">
+            <p>{{ node.content_object.quote_text }}</p>
+            <footer class="blockquote-footer">
+                In <cite title="Source Title"><a href="{{ node.content_object.pdf_document.get_absolute_url }}">{{ node.content_object.pdf_document.title }}</a></cite>
+            </footer>
+        </blockquote>
+    </div>
+</div>

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Protagonists - {{ case.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Protagonists in Case: {{ case.title }}</h1>
+        <a href="{% url 'case_manager:case_detail' pk=case.pk %}" class="btn btn-secondary">Back to Case</a>
+    </div>
+
+    {% if protagonists %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>LinkedIn Profile</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for protagonist in protagonists %}
+                        <tr>
+                            <td>{{ protagonist.get_full_name }}</td>
+                            <td>{{ protagonist.role }}</td>
+                            <td>
+                                {% if protagonist.linkedin_url %}
+                                    <a href="{{ protagonist.linkedin_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fab fa-linkedin"></i> View Profile
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Not available</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'protagonist_manager:protagonist_detail' pk=protagonist.pk %}?case_id={{ case.pk }}" class="btn btn-sm btn-info">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            No protagonists found linked to the evidence in this case.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

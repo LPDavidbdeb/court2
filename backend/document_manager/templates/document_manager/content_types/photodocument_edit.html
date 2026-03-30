@@ -1,0 +1,4 @@
+{{ node.content_object.title }}
+{% if node.content_object.description %}
+    <p class="text-muted small">{{ node.content_object.description|safe|linebreaksbr }}</p>
+{% endif %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>All Conversation Threads</h2>
+    <div class="list-group">
+        {% for thread in threads %}
+            <a href="{% url 'googlechat:chat_thread_detail' thread.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">Thread #{{ thread.original_thread_id }}</h5>
+                    <small>{{ thread.last_msg_time|date:"M d, Y" }}</small>
+                </div>
+                <p class="mb-1">
+                    {{ thread.messages.first.text_content|default:"(No content)"|truncatechars:100 }}
+                </p>
+            </a>
+        {% empty %}
+            <div class="list-group-item">
+                <p class="mb-1">No threads found. Import some data!</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

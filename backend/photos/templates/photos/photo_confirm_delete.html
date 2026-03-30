@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Confirm Delete Photo{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Delete Photo: {{ photo.file_name }}?</h1>
+
+    <div class="alert alert-danger" role="alert">
+        <p>Are you sure you want to delete the photo "<strong>{{ photo.file_name }}</strong>"?</p>
+        <p>This action cannot be undone.</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger me-2">Yes, Delete</button>
+        <a href="{% url 'photos:detail' pk=photo.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

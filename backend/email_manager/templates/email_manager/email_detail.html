@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Email: {{ email.subject }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Email: {{ email.subject }}</h1>
+        <a href="{% url 'email_manager:thread_detail' pk=email.thread.pk %}" class="btn btn-outline-secondary">Retour au fil de discussion</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            Détails du Courriel
+        </div>
+        <div class="card-body">
+            <p><strong>De:</strong> {{ email.sender }}</p>
+            <p><strong>À:</strong> {{ email.recipients_to }}</p>
+            {% if email.recipients_cc %}<p><strong>Cc:</strong> {{ email.recipients_cc }}</p>{% endif %}
+            <p><strong>Date:</strong> {{ email.date_sent|date:"d M Y H:i" }}</p>
+            <hr>
+            <div class="email-body" style="max-height: 400px; overflow-y: auto; border: 1px solid #e9ecef; padding: 1rem; border-radius: .25rem; background-color: #f8f9fa;">
+                <pre style="white-space: pre-wrap; word-wrap: break-word;">{{ email.body_plain_text|linebreaksbr }}</pre>
+            </div>
+        </div>
+        <div class="card-footer text-muted">
+            <a href="{% url 'email_manager:email_download' pk=email.pk %}" class="btn btn-sm btn-outline-primary">Télécharger .eml</a>
+        </div>
+    </div>
+
+    {# Existing Quotes #}
+    <hr class="my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Citations de cet email</h5>
+        <button class="btn btn-primary" 
+                data-bs-toggle="modal" 
+                data-bs-target="#addQuoteModal"
+                data-email-id="{{ email.pk }}"
+                data-email-body="{{ email.body_plain_text }}">
+            Ajouter une Citation
+        </button>
+    </div>
+    
+    {% if email.quotes.all %}
+        <ul class="list-group mb-3">
+            {% for quote in email.quotes.all %}
+                <li class="list-group-item">
+                    <blockquote class="blockquote mb-0">
+                        <p>"{{ quote.quote_text }}"</p>
+                        <footer class="blockquote-footer">
+                            Ajouté le: {{ quote.created_at|date:"d M Y" }}
+                            {% if quote.trames_narratives.all %}
+                                <br>
+                                Trames: 
+                                {% for trame in quote.trames_narratives.all %}
+                                    <span class="badge bg-secondary">{{ trame.name }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </footer>
+                    </blockquote>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucune citation n'a été créée pour cet email.</p>
+    {% endif %}
+
+</div>
+
+{% include 'email_manager/quote/partials/add_quote_modal.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const addQuoteModal = document.getElementById('addQuoteModal');
+    const modalFormContainer = addQuoteModal.querySelector('.modal-body');
+    const emailBodyEl = addQuoteModal.querySelector('#modal-email-body');
+
+    addQuoteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const emailId = button.getAttribute('data-email-id');
+        const emailBody = button.getAttribute('data-email-body');
+        const url = `{% url 'email_manager:add_quote' 0 %}`.replace('0', emailId);
+
+        emailBodyEl.textContent = emailBody;
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const formContainer = addQuoteModal.querySelector('#form-container');
+                if(formContainer){
+                    formContainer.innerHTML = html;
+                }
+            });
+    });
+
+    const saveQuoteBtn = document.getElementById('saveQuoteBtn');
+    saveQuoteBtn.addEventListener('click', function () {
+        const form = document.getElementById('addQuoteForm');
+        if (form) {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+    });
+
+    modalFormContainer.addEventListener('submit', function (event) {
+        if (event.target.id === 'addQuoteForm') {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const modal = bootstrap.Modal.getInstance(addQuoteModal);
+                    modal.hide();
+                    location.reload();
+                } else {
+                    const errors = JSON.parse(data.errors);
+                    for (const field in errors) {
+                        const errorList = errors[field];
+                        console.error(`${field}: ${errorList[0].message}`);
+                    }
+                    alert('Please correct the errors in the form.');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

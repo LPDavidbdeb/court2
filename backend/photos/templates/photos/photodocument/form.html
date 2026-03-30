@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Update {{ object.title }}{% else %}Create New Photo Document{% endif %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    #photo-previews-container {
+        margin-top: 10px;
+        margin-bottom: 20px; /* Add space below the previews */
+    }
+    #photo-previews {
+        display: flex;
+        overflow-x: auto; /* Allows horizontal scrolling */
+        white-space: nowrap; /* Prevents wrapping to a new line */
+        gap: 15px;
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        min-height: 220px; /* Taller container */
+        background-color: #f8f9fa;
+        align-items: center;
+    }
+    .preview-image {
+        width: auto; /* Let height dictate width to maintain aspect ratio */
+        height: 200px; /* Larger preview height */
+        object-fit: contain; /* Show the whole image without cropping */
+        border-radius: .25rem;
+        border: 1px solid #ccc;
+        background-color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">{% if object %}Update Photo Document{% else %}Create New Photo Document{% endif %}</h1>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {{ form.non_field_errors }}
+
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                        {{ form.title }}
+                        {{ form.title.errors }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.author_search.id_for_label }}" class="form-label">{{ form.author_search.label }}</label>
+                        {{ form.author_search }}
+                        {{ form.author }}
+                        {% if form.author_search.help_text %}<div class="form-text">{{ form.author_search.help_text }}</div>{% endif %}
+                        {{ form.author_search.errors }}
+                        <div id="author-search-results"></div>
+                         <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addProtagonistModal">
+                            Add New Protagonist
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {{ form.description.errors }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.created_at.id_for_label }}" class="form-label">{{ form.created_at.label }}</label>
+                        {{ form.created_at }}
+                        {{ form.created_at.errors }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.photos.id_for_label }}" class="form-label">{{ form.photos.label }}</label>
+                        {{ form.photos }}
+                        {{ form.photos.errors }}
+                        <div class="form-text">{{ form.photos.help_text }}</div>
+                    </div>
+
+                    <!-- NEW: Photo Preview Area -->
+                    <div id="photo-previews-container">
+                        <label class="form-label">Selected Photo Previews:</label>
+                        <div id="photo-previews">
+                            <span class="text-muted">Select photos from the list above to see previews.</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success">{% if object %}Save Changes{% else %}Create Document{% endif %}</button>
+                        <a href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'photos:document_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'photos/photodocument/_add_protagonist_modal.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const availablePhotos = JSON.parse('{{ available_photos_json|safe }}');
+    const photoSelectElement = document.getElementById('{{ form.photos.id_for_label }}');
+    const previewsContainer = document.getElementById('photo-previews');
+
+    function updatePreviews() {
+        const selectedIds = Array.from(photoSelectElement.selectedOptions).map(option => option.value);
+        previewsContainer.innerHTML = '';
+
+        if (selectedIds.length === 0) {
+            previewsContainer.innerHTML = '<span class="text-muted">Select photos from the list above to see previews.</span>';
+            return;
+        }
+
+        selectedIds.forEach(id => {
+            const photoData = availablePhotos.find(p => p.id == id);
+            if (photoData) {
+                const img = document.createElement('img');
+                img.src = photoData.url;
+                img.classList.add('preview-image');
+                img.alt = `Preview for photo ID ${id}`;
+                previewsContainer.appendChild(img);
+            }
+        });
+    }
+
+    photoSelectElement.addEventListener('change', updatePreviews);
+    updatePreviews(); // Initial call for the update view
+});
+
+$(function() {
+    const authorSearchInput = $("#author-search-input");
+    const authorHiddenInput = $("#author-hidden-input");
+    const searchResults = $("#author-search-results");
+
+    authorSearchInput.on('keyup', function() {
+        const searchTerm = $(this).val();
+        if (searchTerm.length > 2) {
+            $.ajax({
+                url: "{% url 'photos:author_search' %}",
+                data: { 'term': searchTerm },
+                success: function(data) {
+                    searchResults.empty();
+                    data.forEach(function(item) {
+                        searchResults.append(`<div class="search-result-item" data-id="${item.id}">${item.text}</div>`);
+                    });
+                }
+            });
+        } else {
+            searchResults.empty();
+        }
+    });
+
+    $(document).on('click', '.search-result-item', function() {
+        authorSearchInput.val($(this).text());
+        authorHiddenInput.val($(this).data('id'));
+        searchResults.empty();
+    });
+
+    // Handle new protagonist form submission
+    $("#saveProtagonistBtn").on('click', function() {
+        const form = $("#addProtagonistForm");
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'photos:add_protagonist' %}",
+            data: form.serialize(),
+            success: function(response) {
+                if (response.success) {
+                    authorHiddenInput.val(response.id);
+                    authorSearchInput.val(response.name);
+                    $('#addProtagonistModal').modal('hide');
+                    form[0].reset();
+                } else {
+                    const errorDiv = $("#protagonist-form-errors");
+                    errorDiv.empty().show();
+                    for (const field in response.errors) {
+                        response.errors[field].forEach(function(error) {
+                            errorDiv.append(`<p>${field}: ${error}</p>`);
+                        });
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

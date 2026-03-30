@@ -1,0 +1,267 @@
+{% load static %}
+
+<script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+<script src="{% static 'js/custom_inserter_plugin.js' %}"></script>
+
+<script>
+console.log("--- SCRIPT _js.html FINAL VERSION LOADED ---");
+
+document.addEventListener('DOMContentLoaded', function() {
+    const treeContainer = document.getElementById('tree-container');
+    let activeEditor = null;
+
+    // ========================================================================
+    // --- TINYMCE CONFIGURATION ---
+    // ========================================================================
+    const tinymceConfig = {
+        inline: true,
+        menubar: false,
+        plugins: 'advlist autolink lists link image charmap anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount custom_inserter',
+        toolbar: 'undo redo | fontselect fontsizeselect | bold italic underline backcolor forecolor | ' +
+                 'alignleft aligncenter alignright alignjustify | ' +
+                 'bullist numlist outdent indent | link image | removeformat | custom_inserter | help'
+    };
+
+    // ========================================================================
+    // --- SINGLE EVENT LISTENER FOR ALL INLINE TREE ACTIONS ---
+    // ========================================================================
+    treeContainer.addEventListener('click', function(e) {
+        const editableItem = e.target.closest('.editable-item');
+        const aiButton = e.target.closest('.ai-correct-btn');
+
+        if (aiButton) {
+            e.stopPropagation();
+            handleInlineAICorrection(aiButton);
+            return;
+        }
+
+        if (editableItem) {
+            const editableTextDiv = editableItem.querySelector('.editable-text');
+            if (activeEditor && activeEditor.targetElm === editableTextDiv) return;
+            if (activeEditor) saveAndDestroyEditor(activeEditor);
+            initInlineEditor(editableTextDiv);
+            return;
+        }
+
+        if (activeEditor) {
+            saveAndDestroyEditor(activeEditor);
+        }
+    });
+
+    // ========================================================================
+    // --- INLINE EDITOR FUNCTIONS ---
+    // ========================================================================
+
+    function initInlineEditor(element) {
+        if (!element) return;
+        const nodeId = element.id.split('-')[1];
+        const aiActionsDiv = document.querySelector(`.statement-content[data-node-id="${nodeId}"] .ai-actions`);
+
+        const config = { ...tinymceConfig, target: element, setup: function(editor) {
+            activeEditor = editor;
+            editor.on('init', () => {
+                editor.focus();
+                if (aiActionsDiv) aiActionsDiv.style.display = 'block';
+            });
+            editor.on('blur', () => setTimeout(() => {
+                if (activeEditor === editor) saveAndDestroyEditor(editor);
+            }, 200));
+        }};
+        tinymce.init(config);
+    }
+
+    function saveAndDestroyEditor(editor) {
+        if (!editor) return;
+
+        const nodeId = editor.targetElm.id.split('-')[1];
+        const newContent = editor.getContent();
+        const aiActionsDiv = document.querySelector(`.statement-content[data-node-id="${nodeId}"] .ai-actions`);
+
+        if (aiActionsDiv) aiActionsDiv.style.display = 'none';
+
+        if (editor.isDirty()) {
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            const itemElement = document.getElementById(`item-${nodeId}`);
+            let itemText = '';
+            if (itemElement) {
+                 const clone = itemElement.cloneNode(true);
+                 const numbering = clone.querySelector('.node-numbering');
+                 if (numbering) numbering.remove();
+                 itemText = clone.textContent.trim();
+            }
+            formData.append('item', itemText);
+            formData.append('text', newContent);
+
+            fetch(`/documents/ajax/produced/edit-node/${nodeId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(response => response.json()).then(data => {
+                if (data.status !== 'success') alert('Error saving content: ' + data.message);
+            }).catch(error => console.error('Error saving content:', error));
+        }
+
+        editor.destroy();
+        activeEditor = null;
+    }
+
+    function handleInlineAICorrection(button) {
+        if (!activeEditor) return;
+
+        const nodeId = button.dataset.nodeId;
+        const textToCorrect = activeEditor.getContent();
+        const documentId = {{ document.pk }};
+
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        fetch("{% url 'document_manager:ajax_correct_text_with_ai' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ text: textToCorrect, document_id: documentId, prompt: document.getElementById('ai-prompt-textarea').value })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                activeEditor.setContent(data.corrected_text);
+                activeEditor.setDirty(true);
+                saveAndDestroyEditor(activeEditor);
+            } else {
+                alert('Error correcting text: ' + data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = 'Correct with AI';
+        });
+    }
+
+    // ========================================================================
+    // --- MODAL (ADD NEW NODE) LOGIC ---
+    // ========================================================================
+    const addNodeModalEl = document.getElementById('addNodeModal');
+    const addNodeModal = new bootstrap.Modal(addNodeModalEl);
+    const addNodeForm = document.getElementById('addNodeForm');
+
+    document.querySelectorAll('.add-node-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const actionType = this.dataset.actionType;
+            const listItem = this.closest('.library-node-item');
+            const referenceNodePk = listItem ? listItem.dataset.nodeId : null;
+            const nodeTitle = listItem ? listItem.dataset.nodeItem : 'Document Root';
+
+            document.getElementById('id_reference_node_pk').value = referenceNodePk || '';
+            document.getElementById('id_action_type').value = actionType;
+
+            let titleText = "Add New Node";
+            if (actionType === 'add_child') titleText = `Add Child to "${nodeTitle}"`;
+            else if (actionType === 'add_sibling_left') titleText = `Add Sibling (Left) to "${nodeTitle}"`;
+            else if (actionType === 'add_sibling_right') titleText = `Add Sibling (Right) to "${nodeTitle}"`;
+            else if (actionType === 'add_parent') titleText = `Add Parent for "${nodeTitle}"`;
+            else if (actionType === 'add_root') titleText = `Add Root Node to Document`;
+            document.getElementById('addNodeModalLabel').textContent = titleText;
+
+            addNodeModal.show();
+        });
+    });
+
+    addNodeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        tinymce.triggerSave();
+        const formData = new FormData(addNodeForm);
+        fetch(addNodeForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': formData.get('csrfmiddlewaretoken') }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                addNodeModal.hide();
+                location.reload(); 
+            } else {
+                alert('Error: ' + (data.message || 'An unknown error occurred.'));
+            }
+        }).catch(error => console.error('Fetch error:', error));
+    });
+
+    addNodeModalEl.addEventListener('shown.bs.modal', function () {
+        const modalConfig = { ...tinymceConfig, inline: false, selector: '#id_text' };
+        tinymce.init(modalConfig);
+        fetch("{% url 'document_manager:get_ai_persona_prompt' %}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('ai-prompt-textarea').value = data.prompt.trim();
+                }
+            });
+    });
+
+    addNodeModalEl.addEventListener('hidden.bs.modal', () => {
+        const editor = tinymce.get('id_text');
+        if (editor) editor.destroy();
+        addNodeForm.reset();
+    });
+
+    document.getElementById('correct-text-btn').addEventListener('click', function() {
+        const editor = tinymce.get('id_text');
+        if (!editor) return;
+
+        const textToCorrect = editor.getContent();
+        const documentId = {{ document.pk }};
+        const customPrompt = document.getElementById('ai-prompt-textarea').value;
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Correcting...';
+
+        fetch("{% url 'document_manager:ajax_correct_text_with_ai' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ text: textToCorrect, document_id: documentId, prompt: customPrompt })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') editor.setContent(data.corrected_text);
+            else alert('Error correcting text: ' + data.message);
+        })
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            this.disabled = false;
+            this.textContent = 'Correct with AI';
+        });
+    });
+
+    // --- DELETE NODE LOGIC ---
+    const deleteNodeConfirmModal = new bootstrap.Modal(document.getElementById('deleteNodeConfirmModal'));
+    document.querySelectorAll('.delete-node-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('nodeToDeleteItem').textContent = this.dataset.nodeItem;
+            document.getElementById('confirmDeleteNodeBtn').dataset.nodeId = this.dataset.nodeId;
+            deleteNodeConfirmModal.show();
+        });
+    });
+
+    document.getElementById('confirmDeleteNodeBtn').addEventListener('click', function() {
+        const nodeId = this.dataset.nodeId;
+        if (!nodeId) return;
+        const url = `{% url 'document_manager:ajax_delete_node' node_pk=0 %}`.replace('0', nodeId);
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                deleteNodeConfirmModal.hide();
+                location.reload();
+            } else {
+                alert('Error deleting node: ' + (data.message || 'An unknown error occurred.'));
+            }
+        }).catch(error => console.error('Fetch error:', error));
+    });
+});
+</script>

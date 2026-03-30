@@ -1,0 +1,24 @@
+<div class="evidence-section mt-3">
+    <p>
+        <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#collapseEvidence-{{ narrative.pk }}" role="button" aria-expanded="false" aria-controls="collapseEvidence-{{ narrative.pk }}">
+            Show/Hide Evidence ({{ sorted_evidence|length }})
+        </a>
+    </p>
+    <div class="collapse" id="collapseEvidence-{{ narrative.pk }}">
+        <div class="card card-body">
+            <div class="timeline">
+                {% for evidence_item in sorted_evidence %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            {# Dynamically include the correct partial template for the evidence type #}
+                            {% include evidence_item.template_name with object=evidence_item.instance %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No evidence has been linked to this narrative yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>

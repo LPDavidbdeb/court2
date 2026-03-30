@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Event Details{% endblock %}
+
+{% block content %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    {# ADDED: Wrapper for navigation arrows #}
+    <div class="d-flex align-items-start justify-content-center">
+
+        {# Previous Event Arrow #}
+        <div class="text-center me-3" style="width: 50px;">
+            {% if prev_event %}
+                <a href="{% url 'events:detail' prev_event.pk %}" class="text-decoration-none fs-1" title="Previous Event: {{ prev_event.date|date:'Y-m-d' }}">‹</a>
+            {% endif %}
+        </div>
+
+        {# Main Content Card (takes up remaining space) #}
+        <div class="flex-grow-1">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Event on {{ event.date|date:"Y-m-d" }}</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Explanation:</strong></p>
+                    <div class="editable-explanation p-2" data-pk="{{ event.pk }}" data-url="{% url 'events:ajax_update_explanation' event.pk %}" style="cursor: pointer; border: 1px dashed #ccc; border-radius: 5px;">
+                        <span class="explanation-text">{{ event.explanation|linebreaksbr|default:"(Click to add explanation)" }}</span>
+                    </div>
+
+                    <hr class="my-4">
+
+                    {% if event.linked_photos.all %}
+                        <h5>Linked Photos</h5>
+                        <div class="row">
+                            {% for photo in event.linked_photos.all %}
+                                <div class="col-md-3 mb-3">
+                                    <a href="{{ photo.get_absolute_url }}">
+                                        <img src="{{ photo.file.url }}" class="img-fluid rounded" alt="{{ photo.file_name }}">
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if event.linked_email %}
+                        <hr class="my-4">
+                        <h5>Linked Email</h5>
+                        <p><strong>Subject:</strong> {{ event.linked_email.subject }}</p>
+                        <p><strong>Quote:</strong> "{{ event.email_quote }}"</p>
+                    {% endif %}
+
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'events:update' event.pk %}" class="btn btn-secondary">Edit</a>
+                    <a href="{% url 'events:delete' event.pk %}" class="btn btn-danger">Delete</a>
+                    <a href="{% url 'events:list' %}" class="btn btn-outline-secondary">Back to List</a>
+                </div>
+            </div>
+        </div>
+
+        {# Next Event Arrow #}
+        <div class="text-center ms-3" style="width: 50px;">
+            {% if next_event %}
+                <a href="{% url 'events:detail' next_event.pk %}" class="text-decoration-none fs-1" title="Next Event: {{ next_event.date|date:'Y-m-d' }}">›</a>
+            {% endif %}
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        console.error('CSRF token meta tag not found!');
+        return;
+    }
+    const token = csrfToken.getAttribute('content');
+
+    document.querySelectorAll('.editable-explanation').forEach(cell => {
+        cell.addEventListener('click', function(event) {
+            if (cell.querySelector('textarea')) return;
+
+            const span = cell.querySelector('.explanation-text');
+            const currentExplanation = span.innerHTML.replace(/<br\s*\/?>/gi, '\n').trim();
+            
+            const textarea = document.createElement('textarea');
+            textarea.className = 'form-control';
+            textarea.value = currentExplanation;
+            textarea.rows = 4;
+
+            cell.innerHTML = '';
+            cell.appendChild(textarea);
+            textarea.focus();
+
+            const saveChanges = () => {
+                const newExplanation = textarea.value.trim();
+                const url = cell.dataset.url;
+
+                if (newExplanation === currentExplanation) {
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation.replace(/\n/g, '<br>')}</span>`;
+                    return;
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': token
+                    },
+                    body: JSON.stringify({ explanation: newExplanation })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        cell.innerHTML = `<span class="explanation-text">${data.explanation.replace(/\n/g, '<br>')}</span>`;
+                    } else {
+                        alert('Error updating explanation: ' + (data.error || 'Unknown error'));
+                        cell.innerHTML = `<span class="explanation-text">${currentExplanation.replace(/\n/g, '<br>')}</span>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('A network error occurred. Please check the console and try again.');
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation.replace(/\n/g, '<br>')}</span>`;
+                });
+            };
+
+            textarea.addEventListener('blur', saveChanges);
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveChanges();
+                }
+                if (e.key === 'Escape') {
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation.replace(/\n/g, '<br>')}</span>`;
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,25 @@
+<table class="table table-hover align-middle">
+    <tbody>
+        {% for event in events %}
+            <tr>
+                <td style="width: 5%;">
+                    <input class="form-check-input event-select-checkbox" type="checkbox" value="{{ event.pk }}" id="event_check_{{ event.pk }}">
+                </td>
+                <td>
+                    <label for="event_check_{{ event.pk }}" style="cursor: pointer; display: block;">
+                        <strong>{{ event.date|date:"Y-m-d" }}</strong>
+                        <p class="mb-1 text-muted small">{{ event.explanation|truncatewords:25 }}</p>
+                        <div class="d-flex flex-wrap align-items-center">
+                            {% for photo in event.linked_photos.all|slice:":5" %}
+                                <img src="{{ photo.file.url }}" alt="{{ photo.file_name }}" class="me-1 mb-1" style="width: 40px; height: 40px; object-fit: cover; border-radius: 0.25rem;">
+                            {% endfor %}
+                            {% if event.linked_photos.count > 5 %}
+                                <span class="badge bg-secondary align-self-center ms-1">+{{ event.linked_photos.count|add:"-5" }} more</span>
+                            {% endif %}
+                        </div>
+                    </label>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

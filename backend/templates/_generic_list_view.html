@@ -1,0 +1,57 @@
+{# Generic List View Template #}
+
+<div class="row justify-content-center">
+    <div class="col-lg-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h1 class="h4 mb-0">{{ list_config.title }}</h1>
+                <div>
+                    {% for button in list_config.header_buttons %}
+                        <a href="{{ button.url }}" class="btn {{ button.class|default:'btn-light' }} btn-sm">{{ button.text }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if display_rows %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    {% for header in list_config.columns %}
+                                        <th>{{ header }}</th>
+                                    {% endfor %}
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in display_rows %}
+                                    <tr>
+                                        {% for cell in row.cells %}
+                                            <td>{{ cell|safe }}</td>
+                                        {% endfor %}
+                                        <td>
+                                            {% for action in row.actions %}
+                                                {% if action.is_form %}
+                                                    <form action="{{ action.url }}" method="post" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn {{ action.class|default:'btn-danger' }} btn-sm" onclick="return confirm('{{ action.confirm_message|default:'Are you sure?' }}');">{{ action.text }}</button>
+                                                    </form>
+                                                {% else %}
+                                                    <a href="{{ action.url }}" class="btn {{ action.class|default:'btn-primary' }} btn-sm">{{ action.text }}</a>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mt-3" role="alert">
+                        {{ list_config.no_results_message|default:"No items have been created yet." }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

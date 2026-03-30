@@ -1,0 +1,14 @@
+<div class="card my-2">
+    <div class="card-body">
+        <h6 class="card-title">{{ node.content_object.title }}</h6>
+        <p class="card-text">{{ node.content_object.description }}</p>
+        <div class="row">
+            {% for photo in node.content_object.photos.all %}
+            <div class="col-md-4">
+                <img src="{{ photo.image.url }}" class="img-fluid" alt="{{ photo.caption }}">
+                <p>{{ photo.caption }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,18 @@
+{# /document_manager/templates/document_manager/partials/evidence/_event_display.html #}
+
+<div class="d-flex w-100 justify-content-end">
+    <small class="text-muted">{{ evidence.date|date:"d M Y" }}</small>
+</div>
+
+<div class="ps-3 mt-2">
+    <p class="mb-1">{{ evidence.explanation }}</p>
+    {% if evidence.linked_photos.all %}
+        <div class="d-flex flex-wrap mt-2">
+        {% for photo in evidence.linked_photos.all %}
+            <a href="{{ photo.file.url }}" target="_blank" class="me-2 mb-2">
+                <img src="{{ photo.file.url }}" alt="Photo" class="img-thumbnail" style="max-height: 60px;">
+            </a>
+        {% endfor %}
+        </div>
+    {% endif %}
+</div>

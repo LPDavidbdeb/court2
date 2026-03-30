@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF: {{ document.title }}{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h1 class="h4 mb-0">PDF Details</h1>
+                <a href="{% url 'pdf_manager:pdf_list' %}" class="btn btn-sm btn-light">Back to List</a>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ document.title }}</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <strong>Author:</strong> {{ document.author.get_full_name|default:"N/A" }}
+                    </li>
+                    <li class="list-group-item">
+                        <strong>Document Date:</strong> {{ document.document_date|date:"F j, Y"|default:"N/A" }}
+                    </li>
+                </ul>
+
+                <div class="mt-4">
+                    <a href="{{ document.file.url }}" class="btn btn-success" target="_blank">View in New Tab</a>
+                    <a href="{% url 'pdf_manager:pdf_update' document.pk %}" class="btn btn-info">Edit Details</a>
+                    <a href="{% url 'pdf_manager:pdf_delete' document.pk %}" class="btn btn-danger">Delete</a>
+                </div>
+
+                <hr class="my-4">
+                <h5 class="card-title">AI Analysis</h5>
+                <div class="row mb-2 align-items-center">
+                    <div class="col-md-6">
+                        <select id="persona-select" class="form-select">
+                            <option value="forensic_clerk">🔍 Greffier Forensique (Description)</option>
+                            <option value="official_scribe">📜 Scribe Officiel (Transcription)</option>
+                            <option value="summary_clerk">📝 Secrétaire (Résumé)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <button id="analyze-btn" onclick="analyzeDocument('pdf', {{ document.pk }})" class="btn btn-outline-primary">
+                            🤖 Analyser
+                        </button>
+                    </div>
+                </div>
+                <div id="analysis-result" class="mt-2 p-3 bg-light rounded" style="white-space: pre-wrap;">{{ document.ai_analysis|default:"Aucune analyse." }}</div>
+
+                <hr class="my-4">
+                <h5 class="card-title">Embedded PDF Viewer</h5>
+                <div class="pdf-embed-container" style="height: 50vh; border: 1px solid #ccc;">
+                    <embed src="{{ document.file.url }}" type="application/pdf" width="100%" height="100%">
+                </div>
+
+                <hr class="my-4">
+                <h5 class="card-title">Existing Quotes</h5>
+                {% if document.quotes.all %}
+                    <ul class="list-group mb-3">
+                    {% for quote in document.quotes.all %}
+                        <li class="list-group-item">
+                            <div class="editable-quote" data-pk="{{ quote.pk }}" data-url="{% url 'pdf_manager:ajax_update_pdf_quote' quote.pk %}">
+                                <span class="quote-text">"{{ quote.quote_text }}"</span>
+                            </div>
+                            <small class="text-muted">Page: {{ quote.page_number }}</small>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No quotes have been created for this document yet.</p>
+                {% endif %}
+
+                <hr class="my-4">
+                <h5 class="card-title">Create Quote</h5>
+                <form method="POST" action="{% url 'pdf_manager:create_pdf_quote' document.pk %}">
+                    {% csrf_token %}
+                    <div class="form-group mb-3">
+                        <label for="id_quote_text">Quote Text</label>
+                        <textarea name="quote_text" class="form-control" id="id_quote_text" rows="4" placeholder="Enter quote text"></textarea>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="id_page_number">Page Number</label>
+                        <input type="number" name="page_number" class="form-control" id="id_page_number" placeholder="Enter page number">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Quote</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function analyzeDocument(docType, pk) {
+    const button = document.getElementById('analyze-btn');
+    const resultDiv = document.getElementById('analysis-result');
+    const persona = document.getElementById('persona-select').value; // Get selected persona
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    const originalButtonText = button.innerHTML;
+    button.innerHTML = 'Analyse en cours...';
+    button.disabled = true;
+
+    // Change to POST request
+    fetch(`/ai/analyze/${docType}/${pk}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ persona: persona }) // Send persona
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            resultDiv.textContent = data.analysis;
+        } else {
+            resultDiv.textContent = 'Error: ' + data.message;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultDiv.textContent = 'An unexpected error occurred.';
+    })
+    .finally(() => {
+        button.innerHTML = originalButtonText;
+        button.disabled = false;
+    });
+}
+
+function clearAnalysis(url) {
+    if (!confirm("Are you sure you want to delete this AI analysis?")) return;
+
+    const resultDiv = document.getElementById('analysis-result');
+    const button = document.getElementById('clear-btn');
+    
+    button.disabled = true;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            resultDiv.textContent = "Aucune analyse.";
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An unexpected error occurred.');
+    })
+    .finally(() => {
+        button.disabled = false;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        console.error('CSRF token meta tag not found!');
+        return;
+    }
+    const token = csrfToken.getAttribute('content');
+
+    document.querySelectorAll('.editable-quote').forEach(container => {
+        container.addEventListener('click', function(event) {
+            if (container.querySelector('textarea')) return;
+
+            const span = container.querySelector('.quote-text');
+            const currentText = span.textContent.trim().slice(1, -1);
+            const url = container.dataset.url;
+
+            const textarea = document.createElement('textarea');
+            textarea.className = 'form-control';
+            textarea.value = currentText;
+            textarea.rows = 4;
+
+            container.innerHTML = '';
+            container.appendChild(textarea);
+            textarea.focus();
+
+            const saveChanges = () => {
+                const newText = textarea.value.trim();
+
+                if (newText === currentText) {
+                    container.innerHTML = `<span class="quote-text">"${currentText}"</span>`;
+                    return;
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': token
+                    },
+                    body: JSON.stringify({ quote_text: newText })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        container.innerHTML = `<span class="quote-text">"${data.quote_text}"</span>`;
+                    } else {
+                        alert('Error updating quote: ' + (data.error || 'Unknown error'));
+                        container.innerHTML = `<span class="quote-text">"${currentText}"</span>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('A network error occurred. Please check the console and try again.');
+                    container.innerHTML = `<span class="quote-text">"${currentText}"</span>`;
+                });
+            };
+
+            textarea.addEventListener('blur', saveChanges);
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveChanges();
+                }
+                if (e.key === 'Escape') {
+                    container.innerHTML = `<span class="quote-text">"${currentText}"</span>`;
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

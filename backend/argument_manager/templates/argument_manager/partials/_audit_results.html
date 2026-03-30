@@ -1,0 +1,11 @@
+<div class="audit-report">
+    <h6>Analyse du {{ analysis.date|default:"Récemment" }}</h6>
+    {% for constat in analysis.constats_objectifs %}
+    <div class="alert {% if "contredit" in constat.contradiction_directe|lower %}alert-success{% else %}alert-secondary{% endif %}">
+        <strong><i class="fas fa-search"></i> {{ constat.fait_identifie }}</strong>
+        <hr class="my-1">
+        <p class="mb-1">{{ constat.description_factuelle }}</p>
+        <small class="fw-bold text-dark">Impact : {{ constat.contradiction_directe }}</small>
+    </div>
+    {% endfor %}
+</div>

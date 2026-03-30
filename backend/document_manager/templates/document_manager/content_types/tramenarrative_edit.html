@@ -1,0 +1,14 @@
+{% load document_extras %}
+
+{% if node.content_object %}
+<div class="narrative-node-container">
+    
+    {# Header: Title and Summary #}
+    <h5 class="narrative-title">{{ node.content_object.titre }}</h5>
+    <p class="narrative-summary">{{ node.content_object.resume|safe }}</p>
+
+    {# Use the inclusion tag to render the evidence #}
+    {% display_narrative_evidence node.content_object %}
+
+</div>
+{% endif %}

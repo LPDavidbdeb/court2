@@ -1,0 +1,63 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const narrativeId = {{ narrative.pk }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    const statementsModalEl = document.getElementById('selectStatementsModal');
+    const statementsModalBody = document.getElementById('statements-modal-body');
+    const saveStatementChangesBtn = document.getElementById('save-statement-changes-btn');
+    const statementsDisplayList = document.getElementById('statements-display-list');
+
+    if (statementsModalEl) {
+        statementsModalEl.addEventListener('show.bs.modal', function () {
+            statementsModalBody.innerHTML = '<div class="d-flex justify-content-center"><div class="spinner-border" role="status"></div></div>';
+            
+            // Fetch the grouped statements
+            fetch(`/arguments/ajax/get-statements-list/`)
+                .then(response => response.text())
+                .then(html => {
+                    statementsModalBody.innerHTML = html;
+                    
+                    // Pre-check the boxes for already associated statements
+                    const associatedStatementIds = Array.from(statementsDisplayList.querySelectorAll('a')).map(a => a.dataset.statementId);
+                    associatedStatementIds.forEach(id => {
+                        const checkbox = statementsModalBody.querySelector(`input[value="${id}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching statements:', error);
+                    statementsModalBody.innerHTML = '<p class="text-danger">Could not load statements.</p>';
+                });
+        });
+
+        saveStatementChangesBtn.addEventListener('click', function() {
+            const selectedIds = Array.from(statementsModalBody.querySelectorAll('input[type="checkbox"]:checked')).map(input => input.value);
+
+            fetch(`/arguments/${narrativeId}/ajax_update_narrative_statements/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ statement_ids: selectedIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let listHtml = '';
+                    if (data.statements && data.statements.length > 0) {
+                        data.statements.forEach(stmt => {
+                            listHtml += `<a href="#" class="list-group-item list-group-item-action" data-statement-id="${stmt.pk}">"${stmt.text.substring(0, 50)}..."</a>`;
+                        });
+                    } else {
+                        listHtml = '<div class="list-group-item text-muted">No statements linked.</div>';
+                    }
+                    statementsDisplayList.innerHTML = listHtml;
+                    bootstrap.Modal.getInstance(statementsModalEl).hide();
+                } else {
+                    alert('Error saving changes: ' + data.error);
+                }
+            })
+            .catch(error => console.error('Error saving statements:', error));
+        });
+    }
+});
+</script>

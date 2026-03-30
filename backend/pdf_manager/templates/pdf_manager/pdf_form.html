@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Update PDF Document{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h1 class="h4 mb-0">Update PDF: {{ document.title }}</h1>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="pdf-form">
+                        {% csrf_token %}
+                        {{ form.non_field_errors }}
+
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                            {{ form.title }}
+                            {% if form.title.help_text %}<div class="form-text">{{ form.title.help_text }}</div>{% endif %}
+                            {{ form.title.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.author_search.id_for_label }}" class="form-label">{{ form.author_search.label }}</label>
+                            {{ form.author_search }}
+                            {{ form.author }}
+                            {% if form.author_search.help_text %}<div class="form-text">{{ form.author_search.help_text }}</div>{% endif %}
+                            {{ form.author_search.errors }}
+                            <div id="author-search-results"></div>
+                             <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addProtagonistModal">
+                                Add New Protagonist
+                            </button>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.document_date.id_for_label }}" class="form-label">{{ form.document_date.label }}</label>
+                                {{ form.document_date }}
+                                {% if form.document_date.help_text %}<div class="form-text">{{ form.document_date.help_text }}</div>{% endif %}
+                                {{ form.document_date.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.document_type.id_for_label }}" class="form-label">{{ form.document_type.label }}</label>
+                                {{ form.document_type }}
+                                {% if form.document_type.help_text %}<div class="form-text">{{ form.document_type.help_text }}</div>{% endif %}
+                                {{ form.document_type.errors }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">Update PDF</button>
+                            <a href="{% url 'pdf_manager:pdf_detail' pk=document.pk %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+
+                    {% if document.file %}
+                        <hr class="my-4">
+                        <div>
+                            <h5 class="mb-3">PDF Preview</h5>
+                            <object data="{{ document.file.url }}" type="application/pdf" width="100%" height="850px">
+                                <p>Your browser does not support PDFs. <a href="{{ document.file.url }}">Download the PDF</a>.</p>
+                            </object>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'pdf_manager/_add_protagonist_modal.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+    const authorSearchInput = $("#author-search-input");
+    const authorHiddenInput = $("#author-hidden-input");
+    const searchResults = $("#author-search-results");
+
+    authorSearchInput.on('keyup', function() {
+        const searchTerm = $(this).val();
+        if (searchTerm.length > 2) {
+            $.ajax({
+                url: "{% url 'pdf_manager:author_search' %}",
+                data: { 'term': searchTerm },
+                success: function(data) {
+                    searchResults.empty();
+                    data.forEach(function(item) {
+                        searchResults.append(`<div class="search-result-item" data-id="${item.id}">${item.text}</div>`);
+                    });
+                }
+            });
+        } else {
+            searchResults.empty();
+        }
+    });
+
+    $(document).on('click', '.search-result-item', function() {
+        authorSearchInput.val($(this).text());
+        authorHiddenInput.val($(this).data('id'));
+        searchResults.empty();
+    });
+
+    // Handle new protagonist form submission
+    $("#saveProtagonistBtn").on('click', function() {
+        const form = $("#addProtagonistForm");
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'pdf_manager:add_protagonist' %}",
+            data: form.serialize(),
+            success: function(response) {
+                if (response.success) {
+                    authorHiddenInput.val(response.id);
+                    authorSearchInput.val(response.name);
+                    $('#addProtagonistModal').modal('hide');
+                    form[0].reset();
+                } else {
+                    const errorDiv = $("#protagonist-form-errors");
+                    errorDiv.empty().show();
+                    for (const field in response.errors) {
+                        response.errors[field].forEach(function(error) {
+                            errorDiv.append(`<p>${field}: ${error}</p>`);
+                        });
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

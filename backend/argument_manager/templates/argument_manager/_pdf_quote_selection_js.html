@@ -1,0 +1,157 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const narrativeId = {{ narrative.pk }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    // --- Elements for "Select Existing PDF Quotes" Modal ---
+    const selectPdfQuotesModalEl = document.getElementById('selectPdfQuotesModal');
+    const selectPdfQuotesModalBody = document.getElementById('pdf-quotes-modal-body');
+    const savePdfQuoteChangesBtn = document.getElementById('save-pdf-quote-changes-btn');
+    const pdfQuotesDisplayList = document.getElementById('pdf-quotes-display-list');
+
+    // --- Elements for "Create New PDF Quote" Modal ---
+    const addPdfQuoteModalEl = document.getElementById('addPdfQuoteModal');
+    const pdfSourceListPane = document.getElementById('pdf-source-list-pane');
+    const pdfViewerPane = document.getElementById('pdf-viewer-pane');
+    const newPdfQuoteTextArea = document.getElementById('new-pdf-quote-text-area');
+    const newPdfQuotePageInput = document.getElementById('new-pdf-quote-page-input');
+    const sourcePdfIdInput = document.getElementById('source-pdf-id-input');
+    const saveNewPdfQuoteBtn = document.getElementById('save-new-pdf-quote-btn');
+
+    // --- Logic for "Select Existing PDF Quotes" Modal ---
+    if (selectPdfQuotesModalEl && savePdfQuoteChangesBtn && pdfQuotesDisplayList) {
+        selectPdfQuotesModalEl.addEventListener('show.bs.modal', function () {
+            selectPdfQuotesModalBody.innerHTML = '<div class="d-flex justify-content-center"><div class="spinner-border" role="status"></div></div>';
+            fetch(`/arguments/ajax/get-pdf-quotes-list/`)
+                .then(response => response.text())
+                .then(html => {
+                    selectPdfQuotesModalBody.innerHTML = html;
+                    const associatedQuoteIds = Array.from(pdfQuotesDisplayList.querySelectorAll('a')).map(a => a.dataset.quoteId);
+                    associatedQuoteIds.forEach(id => {
+                        const checkbox = selectPdfQuotesModalBody.querySelector(`input[value="${id}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching PDF quotes:', error);
+                    selectPdfQuotesModalBody.innerHTML = '<p class="text-danger">Could not load quotes.</p>';
+                });
+        });
+
+        savePdfQuoteChangesBtn.addEventListener('click', function() {
+            const selectedIds = Array.from(selectPdfQuotesModalBody.querySelectorAll('input[type="checkbox"]:checked')).map(input => input.value);
+            fetch(`/arguments/${narrativeId}/ajax_update_pdf_quotes/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ quote_ids: selectedIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let listHtml = '';
+                    if (data.quotes && data.quotes.length > 0) {
+                        data.quotes.forEach(quote => {
+                            listHtml += `<a href="${quote.parent_url}" class="list-group-item list-group-item-action" data-quote-id="${quote.pk}">"${quote.text.substring(0, 50)}..." (p. ${quote.page})</a>`;
+                        });
+                    } else {
+                        listHtml = '<div class="list-group-item text-muted">No PDF quotes linked.</div>';
+                    }
+                    pdfQuotesDisplayList.innerHTML = listHtml;
+                    bootstrap.Modal.getInstance(selectPdfQuotesModalEl).hide();
+                } else {
+                    alert('Error saving changes: ' + data.error);
+                }
+            })
+            .catch(error => console.error('Error saving PDF quotes:', error));
+        });
+    }
+
+    // --- Logic for "Create New PDF Quote" Modal ---
+    if (addPdfQuoteModalEl && pdfSourceListPane && saveNewPdfQuoteBtn) {
+        addPdfQuoteModalEl.addEventListener('show.bs.modal', function() {
+            pdfSourceListPane.innerHTML = '<div class="d-flex justify-content-center"><div class="spinner-border" role="status"></div></div>';
+            fetch(`/arguments/ajax/get-source-pdfs/`)
+                .then(response => response.text())
+                .then(html => {
+                    pdfSourceListPane.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error fetching source PDFs:', error);
+                    pdfSourceListPane.innerHTML = '<p class="text-danger">Could not load source documents.</p>';
+                });
+        });
+
+        pdfSourceListPane.addEventListener('click', function(e) {
+            if (e.target.matches('.pdf-source-item')) {
+                e.preventDefault();
+                const docId = e.target.dataset.docPk;
+                sourcePdfIdInput.value = docId;
+                pdfViewerPane.innerHTML = '<div class="d-flex justify-content-center"><div class="spinner-border" role="status"></div></div>';
+                fetch(`/arguments/ajax/get-pdf-viewer/${docId}/`)
+                    .then(response => response.text())
+                    .then(html => {
+                        pdfViewerPane.innerHTML = html;
+                        const pdfIframe = pdfViewerPane.querySelector('iframe');
+                        if (pdfIframe) {
+                            pdfIframe.onload = function() {
+                                try {
+                                    pdfIframe.contentDocument.addEventListener('mouseup', function() {
+                                        const selectedText = pdfIframe.contentDocument.getSelection().toString().trim();
+                                        if (selectedText) {
+                                            newPdfQuoteTextArea.value = selectedText;
+                                            validateNewQuoteForm();
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.warn("Could not add text selection listener to PDF iframe, possibly due to cross-origin restrictions.");
+                                }
+                            };
+                        }
+                    });
+            }
+        });
+
+        function validateNewQuoteForm() {
+            const isTextPresent = newPdfQuoteTextArea.value.trim() !== '';
+            const isPagePresent = newPdfQuotePageInput.value.trim() !== '';
+            const isDocSelected = sourcePdfIdInput.value !== '';
+            saveNewPdfQuoteBtn.disabled = !(isTextPresent && isPagePresent && isDocSelected);
+        }
+
+        [newPdfQuoteTextArea, newPdfQuotePageInput].forEach(el => el.addEventListener('input', validateNewQuoteForm));
+
+        saveNewPdfQuoteBtn.addEventListener('click', function() {
+            const docId = sourcePdfIdInput.value;
+            const quoteText = newPdfQuoteTextArea.value;
+            const pageNumber = newPdfQuotePageInput.value;
+
+            // CORRECTED: Use the correct URL from urls.py
+            fetch(`/arguments/${narrativeId}/ajax/add-pdf-quote/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ doc_id: docId, quote_text: quoteText, page_number: pageNumber })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const newQuoteHtml = `<a href="${data.quote.parent_url}" class="list-group-item list-group-item-action" data-quote-id="${data.quote.pk}">"${data.quote.text.substring(0, 50)}..." (p. ${data.quote.page})</a>`;
+                    const emptyMessage = pdfQuotesDisplayList.querySelector('.text-muted');
+                    if (emptyMessage) emptyMessage.remove();
+                    pdfQuotesDisplayList.insertAdjacentHTML('beforeend', newQuoteHtml);
+                    
+                    newPdfQuoteTextArea.value = '';
+                    newPdfQuotePageInput.value = '';
+                    sourcePdfIdInput.value = '';
+                    validateNewQuoteForm();
+                    
+                    bootstrap.Modal.getInstance(addPdfQuoteModalEl).hide();
+                    bootstrap.Modal.getInstance(selectPdfQuotesModalEl).show();
+                } else {
+                    alert('Error adding quote: ' + data.error);
+                }
+            })
+            .catch(error => console.error('Error adding PDF quote:', error));
+        });
+    }
+});
+</script>

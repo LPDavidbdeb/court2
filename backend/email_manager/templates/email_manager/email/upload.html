@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload EML File{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">Upload .EML Email File</h1>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data"> {# IMPORTANT: enctype for file uploads #}
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.eml_file.id_for_label }}" class="form-label">{{ form.eml_file.label }}</label>
+                        {{ form.eml_file }}
+                        {% if form.eml_file.help_text %}
+                            <div class="form-text">{{ form.eml_file.help_text }}</div>
+                        {% endif %}
+                        {% if form.eml_file.errors %}
+                            <div class="text-danger small">{{ form.eml_file.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.protagonist.id_for_label }}" class="form-label">{{ form.protagonist.label }}</label>
+                        {{ form.protagonist }}
+                        {% if form.protagonist.help_text %}
+                            <div class="form-text">{{ form.protagonist.help_text }}</div>
+                        {% endif %}
+                        {% if form.protagonist.errors %}
+                            <div class="text-danger small">{{ form.protagonist.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-success me-2">Upload and Save Email</button>
+                    <a href="{% url 'email_manager:thread_list' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

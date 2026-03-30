@@ -1,0 +1,10 @@
+<div class="list-group">
+    {% for doc in photo_documents %}
+        <label class="list-group-item d-flex justify-content-between align-items-center">
+            <input class="form-check-input me-1" type="checkbox" value="{{ doc.pk }}" {% if doc.pk in narrative.photo_documents.all.values_list('pk', flat=True) %}checked{% endif %}>
+            <span>{{ doc.title }} <small class="text-muted">({{ doc.created_at|date:"Y-m-d" }})</small></span>
+        </label>
+    {% empty %}
+        <div class="list-group-item">No photo documents available.</div>
+    {% endfor %}
+</div>

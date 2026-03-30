@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}{{ protagonist.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>{{ protagonist.get_full_name }}</h1>
+                {% if case %}
+                    <a href="{% url 'case_manager:case_protagonists' pk=case.pk %}" class="btn btn-secondary btn-sm">Back to Case Protagonists</a>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="role-input"><strong>Role:</strong></label>
+                <input type="text" id="role-input" class="form-control" value="{{ protagonist.role }}" data-protagonist-id="{{ protagonist.pk }}">
+                <small id="role-status" class="form-text text-muted"></small>
+            </div>
+
+            <div class="form-group mt-3">
+                <label for="linkedin-input"><strong>LinkedIn URL:</strong></label>
+                <input type="url" id="linkedin-input" class="form-control" value="{{ protagonist.linkedin_url|default_if_none:'' }}" data-protagonist-id="{{ protagonist.pk }}" placeholder="https://www.linkedin.com/in/...">
+                <small id="linkedin-status" class="form-text text-muted"></small>
+                {% if protagonist.linkedin_url %}
+                    <a href="{{ protagonist.linkedin_url }}" target="_blank" id="linkedin-link" class="d-block mt-1">Visit Profile</a>
+                {% else %}
+                    <a href="#" target="_blank" id="linkedin-link" class="d-block mt-1" style="display: none !important;">Visit Profile</a>
+                {% endif %}
+            </div>
+            
+            {% if case %}
+                <div class="card mt-4 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        Evidence in Case: {{ case.title }}
+                    </div>
+                    <div class="card-body">
+                        {% if case_exhibits %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Exhibit</th>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for exhibit in case_exhibits %}
+                                            <tr>
+                                                <td><strong>{{ exhibit.label }}</strong></td>
+                                                <td>{{ exhibit.date_display }}</td>
+                                                <td>{{ exhibit.exhibit_type }}</td>
+                                                <td>{{ exhibit.description|truncatechars:100 }}</td>
+                                                <td>
+                                                    {% if exhibit.content_type.model == 'document' %}
+                                                        <a href="{% url 'document_manager:clean_detail' pk=exhibit.object_id %}" class="btn btn-sm btn-outline-info">View</a>
+                                                    {% elif exhibit.content_type.model == 'email' %}
+                                                        <a href="{% url 'email_manager:email_detail' pk=exhibit.object_id %}" class="btn btn-sm btn-outline-info">View</a>
+                                                    {% elif exhibit.content_type.model == 'pdfdocument' %}
+                                                        <a href="{% url 'pdf_manager:pdf_detail' pk=exhibit.object_id %}" class="btn btn-sm btn-outline-info">View</a>
+                                                    {% elif exhibit.content_type.model == 'photodocument' %}
+                                                        <a href="{% url 'photos:document_detail' pk=exhibit.object_id %}" class="btn btn-sm btn-outline-info">View</a>
+                                                    {% elif exhibit.content_type.model == 'event' %}
+                                                        <a href="{% url 'events:detail' pk=exhibit.object_id %}" class="btn btn-sm btn-outline-info">View</a>
+                                                    {% elif exhibit.content_type.model == 'chatsequence' %}
+                                                        <a href="{% url 'googlechat:sequence_detail' pk=exhibit.object_id %}" class="btn btn-sm btn-outline-info">View</a>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No evidence found directly linked to this protagonist in this case.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <h3>Emails</h3>
+                <a href="{% url 'protagonist_manager:add_email' protagonist_pk=protagonist.pk %}" class="btn btn-primary btn-sm">Add Email</a>
+            </div>
+            <ul>
+                {% for email in protagonist.emails.all %}
+                    <li>{{ email.email_address }}</li>
+                {% empty %}
+                    <li>No email addresses found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Side Panel for Merging -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    Merge Protagonist
+                </div>
+                <div class="card-body">
+                    <p>Merge this protagonist with another. All associated data will be moved to the selected protagonist, and this one will be deleted.</p>
+                    <form action="{% url 'protagonist_manager:merge_protagonist' %}" method="post" onsubmit="return confirm('Are you sure you want to merge these protagonists? This action cannot be undone.');">
+                        {% csrf_token %}
+                        <input type="hidden" name="original_protagonist" value="{{ protagonist.pk }}">
+                        
+                        <div class="form-group">
+                            <label for="duplicate-select">Select protagonist to merge into this one:</label>
+                            <select name="duplicate_protagonist" id="duplicate-select" class="form-control">
+                                <option value="">--- Select a protagonist ---</option>
+                                {% for candidate in merge_candidates %}
+                                    <option value="{{ candidate.pk }}">{{ candidate.get_full_name }} ({{ candidate.role }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-danger mt-3">Merge</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Role update logic
+    const roleInput = $('#role-input');
+    const roleStatus = $('#role-status');
+    let originalRole = roleInput.val();
+
+    roleInput.on('blur', function() {
+        const newRole = $(this).val();
+        const protagonistId = $(this).data('protagonist-id');
+
+        if (newRole !== originalRole) {
+            roleStatus.text('Saving...').removeClass('text-danger').addClass('text-muted');
+
+            fetch("{% url 'protagonist_manager:update_protagonist_role' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    protagonist_id: protagonistId,
+                    role: newRole
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    originalRole = newRole;
+                    roleStatus.text('Saved!').delay(2000).fadeOut('slow', function() { $(this).text('').show(); });
+                } else {
+                    roleStatus.text('Error: ' + data.message).addClass('text-danger');
+                    roleInput.val(originalRole);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                roleStatus.text('An unexpected error occurred.').addClass('text-danger');
+                roleInput.val(originalRole);
+            });
+        }
+    });
+
+    // LinkedIn update logic
+    const linkedinInput = $('#linkedin-input');
+    const linkedinStatus = $('#linkedin-status');
+    const linkedinLink = $('#linkedin-link');
+    let originalLinkedin = linkedinInput.val();
+
+    linkedinInput.on('blur', function() {
+        const newLinkedin = $(this).val();
+        const protagonistId = $(this).data('protagonist-id');
+
+        if (newLinkedin !== originalLinkedin) {
+            linkedinStatus.text('Saving...').removeClass('text-danger').addClass('text-muted');
+
+            fetch("{% url 'protagonist_manager:update_protagonist_linkedin' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    protagonist_id: protagonistId,
+                    linkedin_url: newLinkedin
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    originalLinkedin = newLinkedin;
+                    linkedinStatus.text('Saved!').delay(2000).fadeOut('slow', function() { $(this).text('').show(); });
+
+                    if (newLinkedin) {
+                        linkedinLink.attr('href', newLinkedin).show();
+                    } else {
+                        linkedinLink.hide();
+                    }
+                } else {
+                    linkedinStatus.text('Error: ' + data.message).addClass('text-danger');
+                    linkedinInput.val(originalLinkedin);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                linkedinStatus.text('An unexpected error occurred.').addClass('text-danger');
+                linkedinInput.val(originalLinkedin);
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

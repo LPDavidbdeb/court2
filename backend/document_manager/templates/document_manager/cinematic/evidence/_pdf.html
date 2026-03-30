@@ -1,0 +1,15 @@
+<div class="stream-content">
+    <div class="text-muted text-uppercase small mb-2" style="letter-spacing: 1px;">
+        <i class="fas fa-file-pdf"></i> Extrait Documentaire
+    </div>
+
+    <h4 class="mb-3">{{ evidence.pdf_document.title }}</h4>
+
+    <blockquote class="blockquote fs-5">
+        "{{ evidence.quote_text }}"
+    </blockquote>
+
+    <div class="mt-2 small text-muted">
+        Page {{ evidence.page_number }} • Document officiel
+    </div>
+</div>

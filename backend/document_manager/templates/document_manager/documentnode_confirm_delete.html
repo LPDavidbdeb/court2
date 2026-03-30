@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmer la Suppression du Nœud{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-danger text-white">
+                <h1 class="h4 mb-0">Confirmer la Suppression</h1>
+            </div>
+            <div class="card-body">
+                <p class="lead">Êtes-vous sûr de vouloir supprimer le nœud "<strong>{{ document_node.item }}</strong>" (Type: {{ document_node.get_node_type_display }}, ID: {{ document_node.id }}) ?</p>
+                <p class="text-danger">Cette action est irréversible et supprimera également tous les sous-nœuds.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger me-2">Oui, Supprimer</button>
+                    <a href="{% url 'document_manager:documentnode_detail' document_node.pk %}" class="btn btn-secondary">Annuler</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

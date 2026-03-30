@@ -1,0 +1,9 @@
+{# /document_manager/templates/document_manager/partials/evidence/_statement_display.html #}
+
+<div class="d-flex w-100 justify-content-end">
+    <small class="text-muted">{{ evidence.created_at|date:"d M Y" }}</small>
+</div>
+
+<div class="ps-3 mt-2">
+    <p class="mb-1 fst-italic">"{{ evidence.text }}"</p>
+</div>

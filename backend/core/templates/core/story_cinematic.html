@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Le parjure d'Élise Ayoub{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+<style>
+    /* === AMBIANCE === */
+    body {
+      background-color: #0b0b0b;
+      color: #f5f5f5;
+      font-family: 'Lato', sans-serif;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.7), rgba(0,0,0,0.95)),
+                  url("https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80") center/cover no-repeat;
+      filter: brightness(0.4) contrast(1.1);
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    /* === HERO === */
+    .hero-section {
+        height: 100vh;
+        display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        padding: 0 2rem;
+    }
+    .main-title {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(2.5rem, 8vw, 5rem); /* Responsive font size */
+        color: #f5f5f5; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem;
+    }
+
+    /* === SCÈNE (GROUPE DATE + AUTEUR) === */
+    .scene-group {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .scene-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        z-index: 10;
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    .intro-date {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.5rem;
+        color: #f5f5f5;
+        border-bottom: 1px solid #d8c690;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        display: inline-block;
+    }
+
+    .intro-author {
+        font-size: 1.5rem;
+        color: #d8c690;
+        font-weight: 300;
+    }
+    .author-role {
+        font-size: 1rem; color: #888; text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* === EMPILAGE DES CITATIONS (GRID TRICK) === */
+    .cards-stack {
+        display: grid;
+        width: 100%;
+        max-width: 800px;
+        grid-template-areas: "stack";
+        align-items: center;
+        justify-items: center;
+    }
+
+    .evidence-quote {
+        grid-area: stack;
+        width: 100%;
+        font-family: 'Playfair Display', serif;
+        font-size: 1.4rem;
+        line-height: 1.6;
+        font-style: italic;
+        color: #fff;
+        margin: 0;
+        padding: 1.5rem 2rem;
+        border-left: 5px solid #d8c690;
+        opacity: 0;
+        transform: translateY(30px);
+        will-change: opacity, transform;
+    }
+
+    /* Couleurs de bordure */
+    .border-pdf { border-left-color: #dc3545; }
+    .border-email { border-left-color: #0d6efd; }
+    .border-statement { border-left-color: #ffc107; }
+
+    /* === RESPONSIVE STYLES FOR MOBILE === */
+    @media (max-width: 576px) {
+        .main-title {
+            font-size: 2rem;
+        }
+        .intro-date {
+            font-size: 1.8rem;
+        }
+        .intro-author {
+            font-size: 1.2rem;
+        }
+        .evidence-quote {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            padding: 1.5rem;
+        }
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="hero-section">
+    <h1 class="main-title">{{ trame.titre }}</h1>
+    <div style="font-size: 1.2rem; font-style: italic; color: #d8c690; margin-bottom: 3rem; max-width: 600px;">
+        « {{ trame.resume }} »
+    </div>
+    <div style="margin-top: 50px; color: #d8c690;"><i class="bi bi-arrow-down fs-2 animate-bounce"></i></div>
+</div>
+
+<div class="cinematic-wrapper" style="padding-bottom: 50vh;">
+
+    {% regroup timeline by date.date as date_list %}
+
+    {% for day in date_list %}
+
+        {% regroup day.list by author_name as author_list %}
+
+        {% for author_group in author_list %}
+
+            <div class="scene-group js-scene">
+
+                <div class="scene-header js-header">
+                    <div class="intro-date">Le {{ day.grouper|date:"d F Y" }}</div>
+                    <div class="intro-author">
+                        {{ author_group.grouper }}
+                        {% with first_item=author_group.list.0 %}
+                            {% if first_item.author_role %}
+                                <span class="author-role">| {{ first_item.author_role }}</span>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <div class="cards-stack">
+                    {% for item in author_group.list %}
+                        <blockquote class="evidence-quote js-card {% if item.type == 'pdf' %}border-pdf{% elif item.type == 'email' %}border-email{% else %}border-statement{% endif %}">
+                            "{{ item.content|linebreaksbr }}"
+                        </blockquote>
+                    {% endfor %}
+                </div>
+
+            </div>
+        {% endfor %}
+
+    {% endfor %}
+
+    <div style="height: 50vh; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+        <h3 style="font-family: 'Playfair Display'; color: #444;">Fin de la chronologie</h3>
+
+        {% if source_documents %}
+        <div class="source-documents" style="margin-top: 2rem; text-align: left; max-width: 800px; width: 100%; padding: 0 2rem;">
+            <h4 style="font-family: 'Playfair Display'; color: #d8c690; border-bottom: 1px solid #d8c690; padding-bottom: 0.5rem; margin-bottom: 1rem;">Documents de référence</h4>
+            <ul style="list-style: none; padding: 0;">
+                {% for doc in source_documents %}
+                <li style="margin-bottom: 0.5rem;">
+                    <a href="{{ doc.url }}" target="_blank" style="color: #f5f5f5; text-decoration: none;">
+                        <span style="color: #d8c690;">[{{ doc.type }}]</span> {{ doc.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", (event) => {
+        gsap.registerPlugin(ScrollTrigger);
+
+        const scenes = gsap.utils.toArray('.js-scene');
+
+        scenes.forEach((scene) => {
+            const header = scene.querySelector('.js-header');
+            const cards = scene.querySelectorAll('.js-card');
+
+            const scrollDistance = (cards.length * 1500) + 1000;
+
+            let tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: scene,
+                    start: "top top",
+                    end: "+=" + scrollDistance,
+                    pin: true,
+                    scrub: 1,
+                }
+            });
+
+            tl.to(header, {
+                autoAlpha: 1,
+                y: 0,
+                duration: 3,
+                ease: "power2.out"
+            });
+
+            cards.forEach((card, index) => {
+                tl.to(card, {
+                    autoAlpha: 1,
+                    y: 0,
+                    duration: 3,
+                    ease: "power2.out"
+                });
+
+                tl.to({}, { duration: 5 });
+
+                tl.to(card, {
+                    autoAlpha: 0,
+                    y: -20,
+                    duration: 3,
+                    ease: "power2.in"
+                });
+            });
+
+            tl.to(header, {
+                autoAlpha: 0,
+                y: -50,
+                duration: 3,
+                ease: "power2.in"
+            });
+        });
+    });
+</script>
+{% endblock %}

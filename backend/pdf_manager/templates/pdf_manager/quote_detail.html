@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF Quote Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h1 class="h4 mb-0">PDF Quote</h1>
+                </div>
+                <div class="card-body">
+                    <blockquote class="blockquote">
+                        <p class="mb-0">"{{ quote.quote_text }}"</p>
+                    </blockquote>
+                    <hr>
+                    <p class="card-text">
+                        <strong>Source Document:</strong> 
+                        <a href="{{ quote.pdf_document.get_absolute_url }}">{{ quote.pdf_document.title }}</a>
+                    </p>
+                    <p class="card-text">
+                        <strong>Author:</strong> 
+                        {% if quote.pdf_document.author %}
+                            <a href="{{ quote.pdf_document.author.get_absolute_url }}">{{ quote.pdf_document.author.get_full_name }}</a>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </p>
+                    <p class="card-text"><strong>Page Number:</strong> {{ quote.page_number }}</p>
+                    
+                    <div class="mt-4">
+                        {% if quote.pdf_document.author %}
+                            <a href="{% url 'protagonist_manager:protagonist_detail' quote.pdf_document.author.pk %}" class="btn btn-secondary">Back to Protagonist</a>
+                        {% endif %}
+                        <a href="{{ quote.pdf_document.get_absolute_url }}" class="btn btn-outline-secondary">View Full PDF</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

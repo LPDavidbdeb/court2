@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Update Quote Associations{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">Update Narrative Associations for Quote</h1>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Quote Text (Read-only)</label>
+                        {{ form.quote_text }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.trames_narratives.label_tag }}
+                        {{ form.trames_narratives }}
+                        <div class="form-text">{{ form.trames_narratives.help_text }}</div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success">Save Changes</button>
+                        <a href="{% url 'email_manager:quote_list' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+<div class="stream-content">
+    <div class="text-muted text-uppercase small mb-2" style="letter-spacing: 1px;">
+        <i class="fas fa-envelope"></i> Courriel du {{ evidence.email.date_sent|date:"d F Y" }}
+    </div>
+
+    <h4 class="mb-3">{{ evidence.email.subject }}</h4>
+
+    <div class="email-body fst-italic border-start border-2 border-dark ps-4 py-1" style="opacity: 0.9;">
+        "{{ evidence.quote_text|linebreaksbr }}"
+    </div>
+
+    <div class="mt-3 small text-muted">
+        <strong>De:</strong> {{ evidence.email.sender }} <br>
+        <strong>À:</strong> {{ evidence.email.recipients }}
+    </div>
+</div>

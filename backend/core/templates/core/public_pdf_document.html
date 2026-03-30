@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ pdf_document.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>{{ pdf_document.title }}</h1>
+    <hr>
+    <p><strong>Author:</strong> {{ pdf_document.author.get_full_name|default:"N/A" }}</p>
+    <p><strong>Date:</strong> {{ pdf_document.document_date|date:"F d, Y"|default:"N/A" }}</p>
+
+    {% if pdf_document.file %}
+        <div class="mt-4">
+            <a href="{{ pdf_document.file.url }}" target="_blank" class="btn btn-primary">View PDF</a>
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <h3>Quotes</h3>
+        {% for quote in pdf_document.quotes.all %}
+            <blockquote class="blockquote">
+                <p>{{ quote.quote_text }}</p>
+                <footer class="blockquote-footer">Page {{ quote.page_number }}</footer>
+            </blockquote>
+        {% empty %}
+            <p>No quotes available for this document.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

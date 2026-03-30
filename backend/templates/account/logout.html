@@ -1,0 +1,18 @@
+{% extends "auth_base.html" %}
+
+{% block title %}Logout{% endblock %}
+
+{% block content %}
+<div class="auth-form-container">
+    <h2>Log Out</h2>
+    <p>Are you sure you want to log out?</p>
+    <hr class="border-secondary">
+    <form method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-danger">Log Out</button>
+            <a href="/" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

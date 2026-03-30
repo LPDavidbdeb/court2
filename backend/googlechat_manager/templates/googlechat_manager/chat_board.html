@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Main container for the two-pane layout */
+    .chat-container { 
+        display: flex; 
+        height: 85vh; 
+        border: 1px solid #ddd; 
+        border-radius: 8px; 
+        overflow: hidden; 
+        font-family: sans-serif; 
+    }
+    
+    /* Sidebar for the list of threads */
+    .chat-sidebar { 
+        width: 300px; 
+        background-color: #f8f9fa; 
+        border-right: 1px solid #ddd; 
+        overflow-y: auto; 
+    }
+    .thread-item { 
+        padding: 15px; 
+        border-bottom: 1px solid #eee; 
+        cursor: pointer; 
+        transition: background 0.2s; 
+    }
+    .thread-item:hover { 
+        background-color: #e9ecef; 
+    }
+    .thread-item.active { 
+        background-color: #e3f2fd; 
+        border-left: 4px solid #2196f3; 
+    }
+    .thread-date { 
+        font-size: 0.8em; 
+        color: #888; 
+        float: right; 
+    }
+    .thread-preview { 
+        font-size: 0.9em; 
+        color: #555; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        margin-top: 5px; 
+    }
+
+    /* Main area for displaying chat messages */
+    .chat-main { 
+        flex: 1; 
+        display: flex; 
+        flex-direction: column; 
+        background-color: #fff; 
+    }
+    .chat-header { 
+        padding: 15px; 
+        border-bottom: 1px solid #ddd; 
+        background-color: #f8f9fa; 
+        font-weight: bold; 
+    }
+    .messages-area { 
+        flex: 1; 
+        padding: 20px; 
+        overflow-y: auto; 
+        background-color: #e5ddd5; /* WhatsApp-like background */
+    }
+
+    /* Message bubble styling */
+    .message-row { 
+        display: flex; 
+        margin-bottom: 15px; 
+    }
+    .message-row.participant-left { 
+        justify-content: flex-start; 
+    }
+    .message-row.participant-right { 
+        justify-content: flex-end; 
+    }
+    
+    .bubble { 
+        max-width: 70%; 
+        padding: 10px 15px; 
+        border-radius: 18px; 
+        position: relative; 
+        font-size: 0.95em; 
+        line-height: 1.4; 
+        word-wrap: break-word;
+    }
+    .bubble-left { 
+        background-color: #ffffff; 
+        color: #000; 
+        border-bottom-left-radius: 4px; 
+    }
+    .bubble-right { 
+        background-color: #dcf8c6; 
+        color: #000; 
+        border-bottom-right-radius: 4px; 
+    }
+
+    .msg-meta { 
+        font-size: 0.75em; 
+        margin-bottom: 4px; 
+        color: #666; 
+        font-weight: bold; 
+    }
+    .msg-time { 
+        font-size: 0.7em; 
+        margin-top: 5px; 
+        opacity: 0.7; 
+        text-align: right; 
+    }
+</style>
+
+<div class="chat-container">
+    <div class="chat-sidebar">
+        {% for t in threads %}
+            <a href="{% url 'googlechat:chat_board_detail' t.id %}" style="text-decoration: none; color: inherit;">
+                <div class="thread-item {% if t.id == selected_thread.id %}active{% endif %}">
+                    <div>
+                        <strong>Thread {{ t.id }}</strong>
+                        <span class="thread-date">{{ t.last_msg_time|date:"M d" }}</span>
+                    </div>
+                    <div class="thread-preview">
+                        {{ t.messages.first.text_content|default:"(No content)"|truncatechars:30 }}
+                    </div>
+                </div>
+            </a>
+        {% empty %}
+            <div style="padding: 20px;">No threads found. Import some data!</div>
+        {% endfor %}
+    </div>
+
+    <div class="chat-main">
+        {% if selected_thread %}
+            <div class="chat-header">
+                Chat Thread #{{ selected_thread.original_thread_id }} 
+                <span style="font-weight: normal; font-size: 0.8em; margin-left: 10px; color: #666;">
+                    ({{ messages|length }} messages)
+                </span>
+            </div>
+
+            <div class="messages-area">
+                {% for msg in messages %}
+                    {% if "Elise" in msg.sender.name %}
+                        <div class="message-row participant-left">
+                            <div class="bubble bubble-left">
+                    {% else %}
+                        <div class="message-row participant-right">
+                            <div class="bubble bubble-right">
+                    {% endif %}
+                                <div class="msg-meta">{{ msg.sender.name|default:"Unknown" }}</div>
+                                
+                                {{ msg.text_content|linebreaksbr }}
+                                
+                                <div class="msg-time">
+                                    {{ msg.timestamp|date:"M d, Y H:i" }}
+                                </div>
+                            </div>
+                        </div>
+                {% empty %}
+                    <p style="text-align: center; color: #888;">No messages in this thread.</p>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="messages-area" style="display: flex; justify-content: center; align-items: center; color: #888;">
+                Select a conversation from the left to view history.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Scroll to bottom of chat automatically
+    var msgArea = document.querySelector('.messages-area');
+    if(msgArea) {
+        msgArea.scrollTop = msgArea.scrollHeight;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,150 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const narrativeId = {{ narrative.pk }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // =====================================================
+    // == 1. Email Quote SELECTION Modal Logic
+    // =====================================================
+    const selectEmailQuotesModal = document.getElementById('selectEmailQuotesModal');
+    if (selectEmailQuotesModal) {
+        const emailQuotesModalBody = document.getElementById('email-quotes-modal-body');
+        const saveEmailQuoteChangesBtn = document.getElementById('save-email-quote-changes-btn');
+        const emailQuotesDisplayList = document.getElementById('email-quotes-display-list');
+
+        selectEmailQuotesModal.addEventListener('show.bs.modal', function () {
+            fetch("{% url 'argument_manager:ajax_get_email_quotes_list' %}")
+                .then(response => response.text())
+                .then(html => {
+                    emailQuotesModalBody.innerHTML = html;
+                    const currentSelectedQuoteIds = Array.from(emailQuotesDisplayList.querySelectorAll('a.list-group-item')).map(a => a.dataset.quoteId);
+                    currentSelectedQuoteIds.forEach(id => {
+                        const checkbox = emailQuotesModalBody.querySelector(`.email-quote-select-checkbox[value="${id}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                });
+        });
+
+        saveEmailQuoteChangesBtn.addEventListener('click', function() {
+            const selectedCheckboxes = emailQuotesModalBody.querySelectorAll('.email-quote-select-checkbox:checked');
+            const newSelectedQuoteIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            const url = `{% url 'argument_manager:ajax_update_narrative_email_quotes' 0 %}`.replace('0', narrativeId);
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify({ quote_ids: newSelectedQuoteIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    emailQuotesDisplayList.innerHTML = ''; // Clear the list
+                    if (data.quotes && data.quotes.length > 0) {
+                        // CORRECTED: Iterate over the 'quotes' array from the server response
+                        data.quotes.forEach(quote => {
+                            const a = document.createElement('a');
+                            a.href = quote.parent_url; // Use the URL from the server
+                            a.className = 'list-group-item list-group-item-action';
+                            a.dataset.quoteId = quote.pk;
+                            // Truncate text on the client side for consistency
+                            const truncatedText = quote.text.split(' ').slice(0, 10).join(' ') + (quote.text.split(' ').length > 10 ? '...' : '');
+                            a.innerHTML = `"${truncatedText}"`;
+                            emailQuotesDisplayList.appendChild(a);
+                        });
+                    } else {
+                        const noQuotesItem = document.createElement('div');
+                        noQuotesItem.className = 'list-group-item text-muted';
+                        noQuotesItem.textContent = 'No email quotes linked.';
+                        emailQuotesDisplayList.appendChild(noQuotesItem);
+                    }
+                    bootstrap.Modal.getInstance(selectEmailQuotesModal).hide();
+                } else {
+                    alert('Error updating email quotes: ' + data.error);
+                }
+            });
+        });
+    }
+
+    // =====================================================
+    // == 2. Email Quote CREATION Modal Logic (Redesigned)
+    // =====================================================
+    const createEmailQuoteModal = document.getElementById('addEmailQuoteModalV2');
+    if(createEmailQuoteModal) {
+        const threadListPane = document.getElementById('quote-thread-list-pane');
+        const emailListPane = document.getElementById('quote-email-list-pane');
+        const newQuoteTextArea = document.getElementById('new-quote-text-area');
+        const sourceEmailIdInput = document.getElementById('source-email-id-input');
+        const saveNewQuoteBtn = document.getElementById('save-new-quote-btn');
+
+        createEmailQuoteModal.addEventListener('show.bs.modal', function() {
+            fetch("{% url 'argument_manager:ajax_get_email_threads' %}")
+                .then(response => response.text())
+                .then(html => { threadListPane.innerHTML = html; });
+        });
+
+        threadListPane.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = e.target.closest('.thread-item');
+            if (target) {
+                const threadId = target.dataset.threadPk;
+                emailListPane.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+                newQuoteTextArea.value = 'Select an email to start quoting.';
+                newQuoteTextArea.placeholder = 'Select an email to start quoting.';
+                sourceEmailIdInput.value = '';
+                saveNewQuoteBtn.disabled = true;
+
+                fetch(`/arguments/ajax/get-thread-emails/${threadId}/`)
+                    .then(response => response.text())
+                    .then(html => { emailListPane.innerHTML = html; });
+            }
+        });
+
+        emailListPane.addEventListener('show.bs.collapse', function(event) {
+            const accordionBody = event.target;
+            const emailId = accordionBody.querySelector('.email-body-content').dataset.emailId;
+
+            // Clear the text area, set the source email ID, and prepare for input
+            newQuoteTextArea.value = '';
+            newQuoteTextArea.placeholder = 'Copy text from the email above and paste it here.';
+            sourceEmailIdInput.value = emailId;
+            saveNewQuoteBtn.disabled = true; // Disabled until user types
+        });
+
+        newQuoteTextArea.addEventListener('input', function() {
+            // Enable save button only if an email is selected and there's text
+            if (sourceEmailIdInput.value && newQuoteTextArea.value.trim().length > 0) {
+                saveNewQuoteBtn.disabled = false;
+            } else {
+                saveNewQuoteBtn.disabled = true;
+            }
+        });
+
+        saveNewQuoteBtn.addEventListener('click', function() {
+            const quoteText = newQuoteTextArea.value.trim();
+            const emailId = sourceEmailIdInput.value;
+
+            if (!quoteText || !emailId) {
+                alert('Please select an email and enter the quote text.');
+                return;
+            }
+
+            const url = `{% url 'argument_manager:ajax_add_email_quote' 0 %}`.replace('0', narrativeId);
+            fetch(url, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify({ email_id: emailId, quote_text: quoteText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    newQuoteTextArea.value = ''; // Clear textarea for next quote
+                    saveNewQuoteBtn.disabled = true;
+                    alert('Quote created successfully! You can now create another from the same email or go back to the selection list.');
+                } else {
+                    alert('Error creating quote: ' + data.error);
+                }
+            });
+        });
+    }
+});
+</script>

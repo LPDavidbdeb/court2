@@ -1,0 +1,23 @@
+/* CSS for hover-activated buttons in document tree */
+.document-node-item {
+    position: relative; /* Needed for absolute positioning of actions if used this way */
+    /* No overflow: hidden; here unless strictly necessary, it can clip content */
+}
+
+.node-actions-placeholder {
+    /* This div reserves the space for the buttons to prevent layout shifts */
+    min-height: 38px; /* Example: height of a typical btn-sm (31px) + some margin */
+    display: flex;
+    align-items: center; /* Vertically align buttons */
+    /* REMOVED: justify-content: flex-end; -- This is now handled by Bootstrap class in HTML */
+}
+
+.node-actions {
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none; /* Prevents interaction when hidden */
+    width: 100%; /* Ensure it takes full width of its container */
+    display: flex; /* Use flex to arrange buttons */
+    flex-wrap: wrap; /* Allow buttons to wrap to next line if space is limited */
+    /* REMOVED: justify-content: flex-end; -- This is now handled by Bootstrap class in HTML */
+}

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load evidence_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Narrative{% else %}Create Narrative{% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <strong>Error:</strong> Please correct the errors below.
+            <ul>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ field }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        {# Hidden fields to store the IDs of selected M2M items #}
+        <input type="hidden" name="selected_events" id="id_selected_events" value="{% for event in associated_events %}{{ event.pk }}{% if not forloop.last %},{% endif %}{% endfor %}">
+        <input type="hidden" name="selected_email_quotes" id="id_selected_email_quotes" value="{% for quote in associated_email_quotes %}{{ quote.pk }}{% if not forloop.last %},{% endif %}{% endfor %}">
+        <input type="hidden" name="selected_pdf_quotes" id="id_selected_pdf_quotes" value="{% for quote in associated_pdf_quotes %}{{ quote.pk }}{% if not forloop.last %},{% endif %}{% endfor %}">
+        <input type="hidden" name="selected_photo_documents" id="id_selected_photo_documents" value="{% for doc in associated_photo_documents %}{{ doc.pk }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+        <div class="row">
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">{% if form.instance.pk %}Edit Narrative Argument{% else %}Create New Narrative Argument{% endif %}</h3>
+                        <div>
+                            <button type="submit" class="btn btn-success">Save Narrative</button>
+                            <a href="{% url 'argument_manager:list' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {# Render fields manually using crispy filter #}
+                        {{ form.titre|as_crispy_field }}
+                        {{ form.resume|as_crispy_field }}
+                        {{ form.type_argument|as_crispy_field }}
+
+                        <div id="div_id_targeted_statements" class="form-group">
+                            <label for="id_targeted_statements">Targeted statements</label>
+                            <div class="controls">
+                                {% for document, statements in grouped_allegations.items %}
+                                    <div class="mb-3">
+                                        <h5 class="mt-3">{{ document.title }}</h5>
+                                        {% for statement in statements %}
+                                            <div class="form-check">
+                                                <input type="checkbox" name="targeted_statements" value="{{ statement.pk }}" class="form-check-input" id="id_targeted_statements_{{ statement.pk }}" {% if statement.pk in form.targeted_statements.value %}checked{% endif %}>
+                                                <label class="form-check-label" for="id_targeted_statements_{{ statement.pk }}">
+                                                    {{ statement.text }}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                {% include 'argument_manager/_evidence_workbench.html' with associated_events=associated_events associated_email_quotes=associated_email_quotes associated_pdf_quotes=associated_pdf_quotes associated_photo_documents=associated_photo_documents is_narrative_saved=form.instance.pk %}
+            </div>
+        </div>
+        <div class="mt-3">
+            <button type="submit" class="btn btn-success">Save Narrative</button>
+            <a href="{% url 'argument_manager:list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Modals -->
+    {% include 'argument_manager/_modals.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+    {{ form.media }}
+    {# This script is safe for both Create and Edit views #}
+    {% include 'argument_manager/_event_selection_js.html' %}
+
+    {# These scripts are ONLY included on the Edit view to prevent crashes #}
+    {% if form.instance.pk %}
+        {% include 'argument_manager/_email_quote_selection_js.html' %}
+        {% include 'argument_manager/_pdf_quote_selection_js.html' %}
+        {% include 'argument_manager/_photo_document_selection_js.html' %}
+    {% endif %}
+{% endblock %}

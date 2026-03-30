@@ -1,0 +1,21 @@
+{# /document_manager/templates/document_manager/partials/evidence/_pdf_quote_display.html #}
+
+<blockquote class="blockquote border-start border-4 ps-3 mb-3">
+    <p class="mb-0 fst-italic">"{{ evidence.quote_text }}"</p>
+</blockquote>
+
+<div class="metadata text-muted small ps-3">
+    <div class="d-flex justify-content-between">
+        <span>
+            <strong>Source:</strong> {{ evidence.pdf_document.title }}
+            {% if evidence.page_number %}
+                <span class="ms-3">(Page {{ evidence.page_number }})</span>
+            {% endif %}
+        </span>
+        <span>
+            {% if evidence.pdf_document.document_date %}
+                {{ evidence.pdf_document.document_date|date:"d M Y" }}
+            {% endif %}
+        </span>
+    </div>
+</div>

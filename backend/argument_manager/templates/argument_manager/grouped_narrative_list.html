@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Grouped Narrative Arguments{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h1>Grouped Narrative Arguments</h1>
+        <p class="text-muted">This view groups narratives that target the exact same set of statements.</p>
+
+        {% for group in grouped_narratives %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Argument Group</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Common Targeted Statements:</h6>
+                    <ul class="list-group mb-3">
+                        {% for statement in group.statements %}
+                            <li class="list-group-item list-group-item-danger">{{ statement.text }}</li>
+                        {% empty %}
+                            <li class="list-group-item">No targeted statements for this group.</li>
+                        {% endfor %}
+                    </ul>
+
+                    <h6>Narratives in this Group:</h6>
+                    <div class="list-group">
+                        {% for narrative in group.narratives %}
+                            <a href="{% url 'argument_manager:detail' narrative.pk %}" class="list-group-item list-group-item-action">
+                                <p class="mb-1">{{ narrative.resume|safe }}</p>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="alert alert-info">
+                There are no narratives to display.
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

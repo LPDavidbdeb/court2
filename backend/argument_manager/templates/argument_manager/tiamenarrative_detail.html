@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Narrative Details{% endblock %}
+
+{% block content %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h3>{{ narrative.titre }}</h3>
+                <small class="text-muted">{{ narrative.get_type_argument_display }}</small>
+            </div>
+            <div>
+                <a href="{% url 'argument_manager:affidavit_generator' narrative.pk %}" class="btn btn-primary">Generate Affidavit</a>
+                <a href="{% url 'argument_manager:list' %}" class="btn btn-outline-secondary">Back to List</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-end mb-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="viewType" id="columnsView" value="columns" checked>
+                    <label class="form-check-label" for="columnsView">Columns</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="viewType" id="accordionView" value="accordion">
+                    <label class="form-check-label" for="accordionView">Accordion</label>
+                </div>
+            </div>
+
+            <p><strong>Summary:</strong></p>
+            <div id="summary-content" title="Click to edit" style="cursor:pointer;">{{ narrative.resume|safe }}</div>
+
+            <hr>
+
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-balance-scale"></i> Audit Forensique IA</h5>
+                    <button id="btn-run-audit" class="btn btn-dark btn-sm" onclick="runNarrativeAudit({{ narrative.pk }})">
+                        <i class="fas fa-robot"></i> Lancer l'analyse des contradictions
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="audit-loading" style="display:none;" class="text-center py-3">
+                        <div class="spinner-border text-warning" role="status"></div>
+                        <p class="mt-2 text-muted">L'IA analyse les preuves et les allégations (Ceci peut prendre 30-60s)...</p>
+                    </div>
+                    
+                    <div id="audit-results-container">
+                        {% if narrative.ai_analysis_json %}
+                            {% include "argument_manager/partials/_audit_results.html" with analysis=narrative.ai_analysis_json %}
+                        {% else %}
+                            <p class="text-muted fst-italic">Aucune analyse forensique effectuée pour le moment.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <a href="{% url 'argument_manager:manage_perjury' narrative.pk %}" class="btn btn-outline-danger">
+                    <i class="fas fa-gavel"></i> 
+                    {% if narrative.perjury_argument %}
+                        Éditer l'Argumentation Juridique
+                    {% else %}
+                        Créer l'Argumentation Juridique (Mode Strict)
+                    {% endif %}
+                </a>
+            </div>
+
+            {% if narrative.perjury_argument %}
+                <div class="card border-danger mb-3">
+                    <div class="card-header bg-danger text-white">Argumentation Juridique</div>
+                    <div class="card-body">
+                        <h4>1. Déclaration</h4>
+                        {{ narrative.perjury_argument.text_declaration|safe }}
+                        
+                        <h4>2. Preuve</h4>
+                        {{ narrative.perjury_argument.text_proof|safe }}
+                        
+                        <h4>3. Mens Rea</h4>
+                        {{ narrative.perjury_argument.text_mens_rea|safe }}
+                        
+                        <h4>4. Intention</h4>
+                        {{ narrative.perjury_argument.text_legal_consequence|safe }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <hr>
+
+            <h5>Targeted Claims (Allegations)</h5>
+            <ul>
+                {% for allegation, doc_pk in allegations_with_docs %}
+                    <li>
+                        {% if doc_pk %}
+                            <a href="{% url 'document_manager:clean_detail_view' doc_pk %}?highlight={{ highlight_ids }}">{{ allegation.text }}</a>
+                        {% else %}
+                            {{ allegation.text }} (Not linked to a document)
+                        {% endif %}
+                    </li>
+                {% empty %}
+                    <li>No specific claims have been targeted yet.</li>
+                {% endfor %}
+            </ul>
+
+            <hr>
+
+            <h5>Supporting Evidence</h5>
+            <div class="row">
+                {# Statements Section - NEW #}
+                <div class="col-md-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>Statements</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#selectStatementsModal">+</button>
+                    </div>
+                    <div class="list-group" id="statements-display-list">
+                        {% for stmt in narrative.source_statements.all %}
+                            <a href="#" class="list-group-item list-group-item-action" data-statement-id="{{ stmt.pk }}">
+                                "{{ stmt.text|truncatewords:10 }}"
+                            </a>
+                        {% empty %}
+                            <div class="list-group-item text-muted">No statements linked.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {# Events Section #}
+                <div class="col-md-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>Events</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#selectEventsModal">+</button>
+                    </div>
+                    <div class="list-group" id="events-display-list">
+                        {% for event in narrative.evenements.all %}
+                            <a href="{% url 'events:detail' event.pk %}" class="list-group-item list-group-item-action">
+                                {{ event.date|date:"Y-m-d" }}: {{ event.explanation|truncatewords:10 }}
+                            </a>
+                        {% empty %}
+                            <div class="list-group-item text-muted">No events linked.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {# Email Quotes Section #}
+                <div class="col-md-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>Email Quotes</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#selectEmailQuotesModal">+</button>
+                    </div>
+                    <div class="list-group" id="email-quotes-display-list">
+                        {% for quote in narrative.citations_courriel.all %}
+                            <a href="{{ quote.email.get_absolute_url }}" class="list-group-item list-group-item-action" data-quote-id="{{ quote.pk }}">
+                                "{{ quote.quote_text|truncatewords:10 }}"
+                            </a>
+                        {% empty %}
+                            <div class="list-group-item text-muted">No email quotes linked.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {# PDF Quotes Section #}
+                <div class="col-md-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>PDF Quotes</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#selectPdfQuotesModal">+</button>
+                    </div>
+                    <div class="list-group" id="pdf-quotes-display-list">
+                        {% for quote in narrative.citations_pdf.all %}
+                            <a href="{{ quote.pdf_document.get_absolute_url }}" class="list-group-item list-group-item-action" data-quote-id="{{ quote.pk }}">
+                                "{{ quote.quote_text|truncatewords:10 }}" (p. {{ quote.page_number }})
+                            </a>
+                        {% empty %}
+                            <div class="list-group-item text-muted">No PDF quotes linked.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {# Photo Documents Section #}
+                <div class="col-md-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>Photo Documents</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#selectPhotoDocumentsModal">+</button>
+                    </div>
+                    <div class="list-group" id="photo-documents-display-list">
+                        {% for doc in narrative.photo_documents.all %}
+                            <a href="{% url 'photos:document_detail' doc.pk %}" class="list-group-item list-group-item-action">
+                                {{ doc.title|truncatewords:10 }}
+                            </a>
+                        {% empty %}
+                            <div class="list-group-item text-muted">No photo documents linked.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'argument_manager:update' narrative.pk %}" class="btn btn-secondary">Edit</a>
+            <a href="{% url 'argument_manager:delete' narrative.pk %}" class="btn btn-danger">Delete</a>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    {% include 'argument_manager/_modals.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+    {{ narrative_data_json|json_script:"narrative-data" }}
+    <script>
+        const narrativeData = JSON.parse(document.getElementById('narrative-data').textContent);
+        window.narrativeData = narrativeData;
+    </script>
+    <script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+    <script src="{% static 'js/custom_inserter_plugin.js' %}"></script> 
+    <script>
+        function runNarrativeAudit(narrativeId) {
+            const btn = document.getElementById('btn-run-audit');
+            const loading = document.getElementById('audit-loading');
+            const container = document.getElementById('audit-results-container');
+            
+            // UI Update
+            btn.disabled = true;
+            loading.style.display = 'block';
+            container.style.opacity = '0.5';
+
+            // AJAX Call
+            fetch(`/argument_manager/narrative/${narrativeId}/audit/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                container.style.opacity = '1';
+                btn.disabled = false;
+
+                if (data.success) {
+                    // Recharger la page pour afficher les résultats (ou injecter le HTML si vous préférez)
+                    window.location.reload(); 
+                } else {
+                    alert("Erreur lors de l'analyse : " + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loading.style.display = 'none';
+                btn.disabled = false;
+                alert("Une erreur de communication est survenue.");
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const summaryContent = document.getElementById('summary-content');
+            let isEditing = false;
+
+            summaryContent.addEventListener('click', function () {
+                if (isEditing) return;
+                isEditing = true;
+
+                tinymce.init({
+                    target: summaryContent,
+                    inline: true,
+                    menubar: false,
+                    plugins: 'advlist autolink lists table custom_inserter', 
+                    toolbar: 'undo redo | bold italic underline | bullist numlist | custom_inserter | table', 
+                    setup: function (editor) {
+                        editor.on('init', () => editor.focus());
+                        editor.on('blur', () => saveContent(editor));
+                        editor.on('remove', () => isEditing = false);
+                    }
+                });
+            });
+
+            function saveContent(editor) {
+                if (!editor.isDirty()) {
+                    editor.destroy();
+                    return;
+                }
+
+                const narrativeId = {{ narrative.pk }};
+                const csrfToken = document.querySelector('[name=csrf-token]').content;
+
+                fetch(`/argument_manager/${narrativeId}/ajax_update_summary/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ resume: editor.getContent() })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert('Error saving summary: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An unexpected error occurred.');
+                })
+                .finally(() => {
+                    editor.destroy();
+                });
+            }
+
+            document.getElementById('accordionView').addEventListener('change', function() {
+                if (this.checked) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('view', 'accordion');
+                    window.location.href = url.toString();
+                }
+            });
+        });
+    </script>
+    {# Includes the JavaScript for modal features #}
+    {% include 'argument_manager/_event_selection_js.html' %}
+    {% include 'argument_manager/_email_quote_selection_js.html' %}
+    {% include 'argument_manager/_pdf_quote_selection_js.html' %}
+    {% include 'argument_manager/_photo_document_selection_js.html' %}
+    {% include 'argument_manager/_statement_selection_js.html' %} {# NEW #}
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Protagonist with Emails{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">Add New Protagonist with Emails</h1>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {# Main Protagonist Form #}
+                    <h5 class="mb-3">Protagonist Details</h5>
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="text-danger small">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <hr class="my-4">
+
+                    {# Protagonist Email Formset #}
+                    <h5 class="mb-3">Email Addresses (up to 5)</h5>
+                    {{ formset.management_form }} {# IMPORTANT for formsets to work #}
+                    
+                    {% for email_form in formset %}
+                        <div class="card card-body bg-light mb-3">
+                            <h6 class="mb-3">Email #{{ forloop.counter }}</h6>
+                            {% for field in email_form %}
+                                <div class="mb-3">
+                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <div class="form-text">{{ field.help_text }}</div>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="text-danger small">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                            {# Hidden field for deletion, if can_delete is True in formset factory #}
+                            {% if formset.can_delete %}
+                                <div class="form-check">
+                                    {{ email_form.DELETE }}
+                                    <label class="form-check-label" for="{{ email_form.DELETE.id_for_label }}">Delete this email</label>
+                                </div>
+                            {% endif %}
+                            {% if email_form.non_field_errors %}
+                                <div class="alert alert-danger mt-2">{{ email_form.non_field_errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-success me-2">Create Protagonist</button>
+                    <a href="{% url 'protagonist_manager:protagonist_list' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

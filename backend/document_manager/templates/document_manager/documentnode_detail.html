@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails du Nœud: {{ document_node.item }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h1 class="h4 mb-0">Détails du Nœud de Document</h1>
+                <div>
+                    <a href="{% url 'document_manager:document_list' %}" class="btn btn-sm btn-light me-2">Retour à la Liste des Documents</a>
+                    <a href="{% url 'document_manager:documentnode_edit' document_node.pk %}" class="btn btn-sm btn-warning me-2">Modifier ce Nœud</a>
+                    <a href="{% url 'document_manager:documentnode_delete' document_node.pk %}" class="btn btn-sm btn-danger">Supprimer ce Nœud</a>
+                </div>
+            </div>
+            <div class="card-body">
+                {# Display the main document node details #}
+                <h5 class="card-title">{{ document_node.item }}</h5>
+                <p class="card-text"><strong>ID:</strong> {{ document_node.id }}</p>
+                <p class="card-text"><strong>Type de Nœud:</strong> <span class="badge bg-info">{{ document_node.get_node_type_display }}</span></p>
+                <p class="card-text"><strong>Profondeur:</strong> {{ document_node.get_depth }}</p>
+                <p class="card-text"><strong>Parent:</strong>
+                    {% if document_node.get_parent %}
+                        <a href="{% url 'document_manager:documentnode_detail' document_node.get_parent.pk %}">{{ document_node.get_parent.item }}</a>
+                    {% else %}
+                        N/A (Nœud Racine)
+                    {% endif %}
+                </p>
+                <p class="card-text"><strong>Texte:</strong></p>
+                <div class="card card-body bg-light mb-3">
+                    <pre class="mb-0">{{ document_node.text|default:"Aucun texte fourni." }}</pre>
+                </div>
+                <p class="card-text"><strong>Créé le:</strong> {{ document_node.created_at|date:"F j, Y, P" }}</p>
+                <p class="card-text"><strong>Dernière mise à jour:</strong> {{ document_node.updated_at|date:"F j, Y, P" }}</p>
+
+                <h6 class="mt-4">Structure du Document:</h6>
+                <ul class="list-group list-group-flush">
+                    {# Start recursive rendering with the current document_node #}
+                    {% include 'document_manager/_document_node_tree.html' with node=document_node current_document_id=document_node.pk %}
+                </ul>
+
+                {# Optional: Button to add a child node directly to the current document_node #}
+                <div class="mt-3">
+                    <button type="button" class="btn btn-success"
+                            data-bs-toggle="modal" data-bs-target="#nodeModal"
+                            data-node-id="{{ document_node.id }}" data-action="add_child"
+                            data-node-item="{{ document_node.item }}" data-node-type="{{ document_node.get_node_type_display }}">
+                        Ajouter un nouveau Sous-Nœud au Document Principal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Bootstrap Modal for Add Sibling/Child/Parent #}
+<div class="modal fade" id="nodeModal" tabindex="-1" aria-labelledby="nodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="nodeModalLabel">Ajouter un Nouveau Nœud</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Action: <strong id="modal-action-display"></strong></p>
+                <p>Nœud de Référence: <strong id="modal-node-item-display"></strong> (ID: <span id="modal-node-id-display"></span>, Type: <span id="modal-node-type-display"></span>)</p>
+                <form id="nodeForm" method="post" action=""> {# Action will be set by JS #}
+                    {% csrf_token %}
+                    {# Hidden fields to pass data to the backend #}
+                    <input type="hidden" name="action_type" id="modal-action-type">
+                    <input type="hidden" name="reference_node_id" id="modal-reference-node-id">
+
+                    {# Form fields #}
+                    <div class="mb-3">
+                        <label for="id_node_type" class="form-label">Type de Nœud</label>
+                        <select class="form-select" id="id_node_type" name="node_type" required>
+                            <option value="">Sélectionner un type</option>
+                            <option value="section">Section</option>
+                            <option value="paragraph">Paragraphe / Contenu</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_item" class="form-label">Titre / Élément</label>
+                        <input type="text" class="form-control" id="id_item" name="item" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_text" class="form-label">Texte du Nœud</label>
+                        <textarea class="form-control" id="id_text" name="text" rows="3"></textarea>
+                    </div>
+
+                    {# Sibling Position Choice (only for add_sibling) #}
+                    <div class="mb-3" id="sibling-position-group" style="display: none;">
+                        <label class="form-label d-block">Position du Frère:</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="sibling_position" id="pos_left" value="left" checked>
+                            <label class="form-check-label" for="pos_left">Avant le Nœud de Référence</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="sibling_position" id="pos_right" value="right">
+                            <label class="form-check-label" for="pos_right">Après le Nœud de Référence</label>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nodeModal = document.getElementById('nodeModal');
+    const modalTitle = nodeModal.querySelector('#nodeModalLabel');
+    const modalActionDisplay = nodeModal.querySelector('#modal-action-display');
+    const modalNodeItemDisplay = nodeModal.querySelector('#modal-node-item-display');
+    const modalNodeIdDisplay = nodeModal.querySelector('#modal-node-id-display');
+    const modalNodeTypeDisplay = nodeModal.querySelector('#modal-node-type-display');
+    const modalActionTypeInput = nodeModal.querySelector('#modal-action-type');
+    const modalReferenceNodeIdInput = nodeModal.querySelector('#modal-reference-node-id');
+    const nodeForm = nodeModal.querySelector('#nodeForm');
+    const siblingPositionGroup = nodeModal.querySelector('#sibling-position-group');
+
+    nodeModal.addEventListener('show.bs.modal', function (event) {
+        // Button that triggered the modal
+        const button = event.relatedTarget;
+        // Extract info from data-bs-* attributes
+        const nodeId = button.getAttribute('data-node-id');
+        const action = button.getAttribute('data-action'); // 'add_child', 'add_sibling', or 'add_parent'
+        const nodeItem = button.getAttribute('data-node-item');
+        const nodeType = button.getAttribute('data-node-type');
+
+        // Update the modal's content.
+        let actionText = '';
+        if (action === 'add_child') {
+            actionText = 'Ajouter un enfant';
+            siblingPositionGroup.style.display = 'none'; // Hide sibling position for add_child
+        } else if (action === 'add_sibling') {
+            actionText = 'Ajouter un frère';
+            siblingPositionGroup.style.display = 'block'; // Show sibling position for add_sibling
+        } else if (action === 'add_parent') {
+            actionText = 'Ajouter un parent';
+            siblingPositionGroup.style.display = 'none'; // Hide sibling position for add_parent
+        }
+        modalActionDisplay.textContent = actionText;
+        modalNodeItemDisplay.textContent = nodeItem;
+        modalNodeIdDisplay.textContent = nodeId;
+        modalNodeTypeDisplay.textContent = nodeType;
+
+        modalActionTypeInput.value = action;
+        modalReferenceNodeIdInput.value = nodeId;
+
+        // Set the form action URL
+        nodeForm.action = "{% url 'document_manager:add_node_modal' %}";
+
+        // Reset form fields
+        nodeForm.reset();
+        // Ensure the 'Before' radio button is checked by default for sibling position
+        nodeForm.querySelector('input[name="sibling_position"][value="left"]').checked = true;
+    });
+
+    // Handle form submission via AJAX
+    nodeForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
+
+        const formData = new FormData(nodeForm);
+        const csrfToken = nodeForm.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(nodeForm.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest' // Identify as AJAX request
+            },
+            body: formData
+        })
+        .then(response => response.json()) // Assuming JSON response
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                nodeModal.hide(); // Hide the modal
+                location.reload(); // Reload page to show new node (can be optimized later)
+            } else {
+                // Display errors from the form
+                let errorHtml = 'Erreur lors de l\'ajout du nœud:\n';
+                try {
+                    const errors = JSON.parse(data.errors); // Parse the JSON string of errors
+                    for (const field in errors) {
+                        errorHtml += `${field}: ${errors[field].join(', ')}\n`;
+                    }
+                } catch (e) {
+                    errorHtml += data.message || 'Erreur de format des erreurs.';
+                }
+                alert(errorHtml);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur inattendue est survenue.');
+        });
+    });
+
+    // --- NEW: JavaScript for Hover Menu Visibility ---
+    const documentNodeItems = document.querySelectorAll('.document-node-item');
+
+    function hideAllNodeActions() {
+        document.querySelectorAll('.node-actions').forEach(actionsDiv => {
+            actionsDiv.style.opacity = '0';
+            actionsDiv.style.pointerEvents = 'none';
+        });
+    }
+
+    documentNodeItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            hideAllNodeActions(); // Hide all other menus first
+            const actionsDiv = this.querySelector('.node-actions');
+            if (actionsDiv) {
+                actionsDiv.style.opacity = '1';
+                actionsDiv.style.pointerEvents = 'auto';
+            }
+        });
+
+        item.addEventListener('mouseleave', function() {
+            const actionsDiv = this.querySelector('.node-actions');
+            if (actionsDiv) {
+                actionsDiv.style.opacity = '0';
+                actionsDiv.style.pointerEvents = 'none';
+            }
+        });
+    });
+    // --- END NEW JavaScript ---
+});
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{# document_manager/templates/document_manager/_document_node_tree.html #}
+{# This template is designed to be included recursively to render a tree of DocumentNodes. #}
+{# It expects a 'node' variable representing the current DocumentNode to render. #}
+{# It also expects 'current_document_id' to highlight the main document being viewed. #}
+
+<li class="list-group-item ps-{{ node.get_depth|add:'1' }} document-node-item {% if node.pk == current_document_id %}bg-light border-primary{% endif %}">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            {% if node.node_type == 'document' %}
+                <h5 class="mb-0">{{ node.item }}</h5>
+            {% elif node.node_type == 'section' %}
+                <h6 class="mb-0">{{ node.item }}</h6>
+            {% else %}
+                <p class="mb-0">{{ node.item }}</p>
+            {% endif %}
+            <small class="text-muted">
+                [{{ node.get_node_type_display }}] ID: {{ node.id }} |
+                Profondeur: {{ node.depth }} | {# Displaying depth #}
+                Chemin: <code>{{ node.path }}</code> {# Displaying path #}
+                {% if not node.pk %} <span class="text-danger">(DEBUG: No PK!)</span> {% endif %} {# Debugging PK #}
+            </small>
+        </div>
+        {# The main content (title, ID, path) is above. The buttons will now appear below this line. #}
+    </div>
+
+    {# This div will be hidden by default and shown via JS on parent hover #}
+    {# It is now a direct child of the <li>, appearing after the d-flex div #}
+    <div class="node-actions-placeholder mt-2"> {# Added mt-2 for a small top margin #}
+        <div class="node-actions d-flex flex-wrap justify-content-start"> {# CHANGED: justify-content-end to justify-content-start #}
+            {# Buttons to trigger the modal for adding new nodes #}
+            <button type="button" class="btn btn-sm btn-outline-success me-1 mb-1"
+                    data-bs-toggle="modal" data-bs-target="#nodeModal"
+                    data-node-id="{{ node.id }}" data-action="add_child"
+                    data-node-item="{{ node.item }}" data-node-type="{{ node.get_node_type_display }}">
+                Ajouter Enfant
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info me-1 mb-1"
+                    data-bs-toggle="modal" data-bs-target="#nodeModal"
+                    data-node-id="{{ node.id }}" data-action="add_sibling"
+                    data-node-item="{{ node.item }}" data-node-type="{{ node.get_node_type_display }}">
+                Ajouter Frère
+            </button>
+            {# Add Parent button - only for nodes at depth 4 or higher #}
+            {% if node.depth >= 4 %} {# Condition added: only show for depth 4 or higher #}
+            <button type="button" class="btn btn-sm btn-outline-warning me-1 mb-1"
+                    data-bs-toggle="modal" data-bs-target="#nodeModal"
+                    data-node-id="{{ node.id }}" data-action="add_parent"
+                    data-node-item="{{ node.item }}" data-node-type="{{ node.get_node_type_display }}">
+                Ajouter Parent
+            </button>
+            {% endif %}
+
+            {# Conditional rendering of links to prevent NoReverseMatch if PK is missing #}
+            {% if node.pk %}
+                <a href="{% url 'document_manager:documentnode_detail' node.pk %}" class="btn btn-sm btn-primary me-1 mb-1">Voir</a>
+                <a href="{% url 'document_manager:documentnode_edit' node.pk %}" class="btn btn-sm btn-warning me-1 mb-1">Modifier</a>
+                <a href="{% url 'document_manager:documentnode_delete' node.pk %}" class="btn btn-sm btn-danger mb-1">Supprimer</a>
+            {% else %}
+                <span class="text-danger btn btn-sm btn-outline-secondary disabled mb-1">Node (No PK)</span>
+            {% endif %}
+        </div>
+    </div>
+    {% if node.text %}
+        <p class="text-muted mt-2 mb-0" style="font-size: 0.85em;">
+            {{ node.text|truncatechars:100 }}
+        </p>
+    {% endif %}
+
+    {# Recursively include children #}
+    {% if node.get_children %}
+        <ul class="list-group list-group-flush mt-2">
+            {% for child in node.get_children %}
+                {% include 'document_manager/_document_node_tree.html' with node=child current_document_id=current_document_id %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>

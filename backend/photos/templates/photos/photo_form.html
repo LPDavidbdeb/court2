@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Photo{% else %}Upload Photo{% endif %}
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">
+        {% if form.instance.pk %}Edit Photo: {{ form.instance.file_name }}{% else %}Upload New Photo{% endif %}
+    </h1>
+
+    <form method="post" enctype="multipart/form-data"> {# IMPORTANT: enctype for file uploads #}
+        {% csrf_token %}
+        {% bootstrap_form form %}
+        <button type="submit" class="btn btn-primary">
+            {% if form.instance.pk %}Update{% else %}Upload{% endif %}
+        </button>
+        <a href="{% url 'photos:list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

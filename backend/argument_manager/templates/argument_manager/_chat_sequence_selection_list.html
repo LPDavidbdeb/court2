@@ -1,0 +1,13 @@
+<ul class="list-group">
+    {% for sequence in all_sequences %}
+        <li class="list-group-item">
+            <input class="form-check-input me-1" type="checkbox" value="{{ sequence.pk }}" id="sequence-{{ sequence.pk }}"
+                   {% if sequence.pk in associated_sequence_ids %}checked{% endif %}>
+            <label class="form-check-label stretched-link" for="sequence-{{ sequence.pk }}">
+                {{ sequence.title }} ({{ sequence.messages.count }} messages)
+            </label>
+        </li>
+    {% empty %}
+        <li class="list-group-item text-muted">No chat sequences have been created yet.</li>
+    {% endfor %}
+</ul>

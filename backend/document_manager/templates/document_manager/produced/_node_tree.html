@@ -1,0 +1,70 @@
+{% load document_extras %}
+
+<ul class="list-unstyled">
+    {% for node in nodes %}
+        {% if node.depth > 1 %} {# Hide the technical root node #}
+            <li class="list-group-item library-node-item node-depth-{{ node.depth }} node-type-{{ node.content_type.model|default:'none' }}"
+                data-node-id="{{ node.pk }}"
+                data-node-depth="{{ node.depth }}"
+                data-node-item="{{ node.item }}">
+
+                {# --- ROW 1: Title and Action Buttons --- #}
+                <div class="d-flex justify-content-between align-items-center">
+                    <h{{ node.depth|add:1 }} id="item-{{ node.pk }}" class="flex-grow-1 me-3" style="padding-left: {{ node.depth|add:"-2"|multiply:40 }}px;">
+                        <span class="node-numbering">{{ node.numbering }}</span>
+                        {{ node.item }}
+                    </h{{ node.depth|add:1 }}>
+
+                    {% if mode == 'edit' %}
+                        <div class="node-actions btn-group btn-group-sm flex-shrink-0" role="group">
+                            <button type="button" class="btn btn-outline-primary add-node-btn" data-action-type="add_child" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Child</button>
+
+                            <div class="btn-group" role="group">
+                                <button id="btnGroupDrop1-{{ node.pk }}" type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Add Sibling
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="btnGroupDrop1-{{ node.pk }}">
+                                    <li><a class="dropdown-item add-node-btn" href="#" data-action-type="add_sibling_left" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Sibling (Left)</a></li>
+                                    <li><a class="dropdown-item add-node-btn" href="#" data-action-type="add_sibling_right" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Sibling (Right)</a></li>
+                                </ul>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary add-node-btn" data-action-type="add_parent" data-bs-toggle="modal" data-bs-target="#addNodeModal">Add Parent</button>
+                            <button type="button" class="btn btn-outline-danger delete-node-btn"
+                                    data-node-id="{{ node.pk }}"
+                                    data-node-item="{{ node.item }}"
+                                    data-bs-toggle="modal" data-bs-target="#deleteNodeConfirmModal">Delete</button>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {# --- ROW 2: Content --- #}
+                <div class="node-content-row" style="padding-left: {{ node.depth|add:"-2"|multiply:40 }}px;">
+                     {% if node.content_object and node.content_template_name %}
+                        {% with template_name=node.content_template_name|add:"_"|add:mode|add:".html" %}
+                            {% include template_name with node=node %}
+                        {% endwith %}
+                    {% else %}
+                         <div class="statement-content editable-item p-3 border rounded mt-3 text-muted fst-italic" data-node-id="{{ node.pk }}">
+                             <div class="editable-text" id="text-{{ node.pk }}">
+                                 Click to add content...
+                             </div>
+                         </div>
+                    {% endif %}
+                </div>
+
+                {# Recurse for children #}
+                {% if node.children_list %}
+                    {% with nodes=node.children_list %}
+                        {% include "document_manager/produced/_node_tree.html" %}
+                    {% endwith %}
+                {% endif %}
+            </li>
+        {% else %} {# If it is the root node, just recurse on its children #}
+            {% if node.children_list %}
+                {% with nodes=node.children_list %}
+                    {% include "document_manager/produced/_node_tree.html" %}
+                {% endwith %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+</ul>

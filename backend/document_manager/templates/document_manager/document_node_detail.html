@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Details: {{ node.item|truncatewords:5 }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h4 mb-0 d-inline-block">Node: {{ node.item }}</h1>
+                    <span class="badge bg-light text-dark ms-2">Depth: {{ node.get_depth }}</span>
+                </div>
+                <div>
+                    {% if node.get_parent %}
+                        <a href="{% url 'document_manager:documentnode_detail' node.get_parent.pk %}" class="btn btn-sm btn-secondary">Up to Parent: {{ node.get_parent.item|truncatewords:5 }}</a>
+                    {% endif %}
+                    <a href="{% url 'document_manager:document_list' %}" class="btn btn-sm btn-light">Back to Document List</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Full Text of this Node:</h5>
+                <div class="card card-body bg-light mb-4">
+                    <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">{{ node.text|default:"(This node has no text content.)" }}</pre>
+                </div>
+
+                {% if node.get_children %}
+                    <h5 class="card-title">Child Nodes:</h5>
+                    <div class="list-group">
+                        {% for child in node.get_children %}
+                            <a href="{% url 'document_manager:documentnode_detail' child.pk %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ child.item }}</h6>
+                                    <small class="text-muted">{{ child.get_descendant_count|add:1 }} node(s) inside</small>
+                                </div>
+                                <p class="mb-1 text-muted small">{{ child.text|truncatewords:25 }}</p>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mt-3" role="alert">
+                        This document node has no children.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load case_manager_extras %}
+
+{% block title %}Contestation: {{ contestation.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Workbench: {{ contestation.title }}</h1>
+        <div class="btn-group">
+            <a href="{% url 'case_manager:manage_statements' contestation.pk %}" class="btn btn-secondary">
+                <i class="fas fa-bullseye"></i> Manage Statements
+            </a>
+            <a href="{% url 'case_manager:manage_narratives' contestation.pk %}" class="btn btn-secondary">
+                <i class="fas fa-cogs"></i> Manage Narratives
+            </a>
+            <a href="{% url 'case_manager:preview_context' contestation.pk %}" target="_blank" class="btn btn-outline-info">
+                <i class="fas fa-eye"></i> View Civil Prompt
+            </a>
+            <a href="{% url 'case_manager:preview_police_prompt' contestation.pk %}" target="_blank" class="btn btn-outline-dark">
+                <i class="fas fa-eye"></i> View Police Prompt
+            </a>
+            <a href="{% url 'case_manager:gen_police_report' contestation.pk %}" class="btn btn-dark">
+                <i class="fas fa-shield-alt"></i> Générer Plainte Criminelle
+            </a>
+            <a href="{% url 'case_manager:generate_suggestion' contestation_pk=contestation.pk %}" class="btn btn-primary">
+                <i class="fas fa-gavel"></i> Générer Argumentaire Civil
+            </a>
+        </div>
+    </div>
+
+    {% if contestation.police_report_data %}
+    <div class="card border-dark mb-4">
+        <div class="card-header bg-dark text-white">
+            <div class="d-flex justify-content-between">
+                <span><i class="fas fa-file-contract"></i> {{ contestation.police_report_data.title }}</span>
+                <small>{{ contestation.police_report_date|date:"Y-m-d H:i" }}</small>
+            </div>
+        </div>
+        <div class="card-body">
+            <h5 class="text-uppercase border-bottom pb-2 mt-3">Incident Overview</h5>
+            <p><strong>Type:</strong> {{ contestation.police_report_data.incident_overview.type }}</p>
+            <p><strong>Location:</strong> {{ contestation.police_report_data.incident_overview.location }}</p>
+
+            <h5 class="text-uppercase border-bottom pb-2 mt-3">Narrative</h5>
+            <p style="white-space: pre-line;">{{ contestation.police_report_data.narrative_intro }}</p>
+
+            <h5 class="text-uppercase border-bottom pb-2 mt-3">Offenses</h5>
+            {% for offense in contestation.police_report_data.offenses %}
+                <div class="mb-4 p-3 bg-light rounded">
+                    <p><strong>False Statement:</strong> <em class="text-danger">"{{ offense.allegation_quote }}"</em></p>
+                    <p><strong>Source:</strong> {{ offense.document_source }}</p>
+                    <hr>
+                    <h6>Contradictory Evidence:</h6>
+                    {% if offense.contradictory_evidence %}
+                        <ul class="list-group">
+                        {% for evidence in offense.contradictory_evidence %}
+                            <li class="list-group-item">
+                                <strong>Date:</strong> {{ evidence.date }} <br>
+                                <strong>Type:</strong> {{ evidence.type }} <br>
+                                <strong>Description:</strong> {{ evidence.description }}
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No direct contradictions found by the AI for this specific statement.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <h5 class="text-uppercase border-bottom pb-2 mt-3">Mens Rea Analysis</h5>
+            <p style="white-space: pre-line;">{{ contestation.police_report_data.mens_rea_analysis }}</p>
+
+            <h5 class="text-uppercase border-bottom pb-2 mt-3">Request</h5>
+            <p style="white-space: pre-line;">{{ contestation.police_report_data.request }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <h3>Final Argument</h3>
+            <form method="post" action="">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_final_sec1_declaration" class="form-label">1. Déclaration</label>
+                    <textarea id="id_final_sec1_declaration" name="final_sec1_declaration" class="form-control tinymce-editor">{{ contestation.final_sec1_declaration }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="id_final_sec2_proof" class="form-label">2. Preuve</label>
+                    <textarea id="id_final_sec2_proof" name="final_sec2_proof" class="form-control tinymce-editor">{{ contestation.final_sec2_proof }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="id_final_sec3_mens_rea" class="form-label">3. Mens Rea</label>
+                    <textarea id="id_final_sec3_mens_rea" name="final_sec3_mens_rea" class="form-control tinymce-editor">{{ contestation.final_sec3_mens_rea }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="id_final_sec4_intent" class="form-label">4. Intention</label>
+                    <textarea id="id_final_sec4_intent" name="final_sec4_intent" class="form-control tinymce-editor">{{ contestation.final_sec4_intent }}</textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Save Final Argument</button>
+            </form>
+        </div>
+
+        <div class="col-md-4">
+            <h4>AI Suggestions</h4>
+            {% for draft in ai_drafts %}
+                <div class="card mb-3 {% if not draft.parsing_success %}border-warning{% endif %}">
+                    <div class="card-header d-flex justify-content-between align-items-center {% if not draft.parsing_success %}bg-warning text-dark{% endif %}">
+                        Draft from {{ draft.created_at|time:"H:i" }}
+                        {% if not draft.parsing_success %}
+                            <span class="badge bg-danger">Parsing Failed</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        {% if draft.parsing_success %}
+                            <p><strong>Section 1:</strong><br><small>{{ draft.content.section_1 }}</small></p>
+                            <button onclick="copyText('{{ draft.content.section_1|escapejs }}', 'id_final_sec1_declaration')" class="btn btn-sm btn-outline-primary">Use</button>
+                            <hr>
+                            <p><strong>Section 2:</strong><br><small>{{ draft.content.section_2 }}</small></p>
+                            <button onclick="copyText('{{ draft.content.section_2|escapejs }}', 'id_final_sec2_proof')" class="btn btn-sm btn-outline-primary">Use</button>
+                            <hr>
+                            <p><strong>Section 3:</strong><br><small>{{ draft.content.section_3 }}</small></p>
+                            <button onclick="copyText('{{ draft.content.section_3|escapejs }}', 'id_final_sec3_mens_rea')" class="btn btn-sm btn-outline-primary">Use</button>
+                            <hr>
+                            <p><strong>Section 4:</strong><br><small>{{ draft.content.section_4 }}</small></p>
+                            <button onclick="copyText('{{ draft.content.section_4|escapejs }}', 'id_final_sec4_intent')" class="btn btn-sm btn-outline-primary">Use</button>
+
+                            <hr>
+                            <details>
+                                <summary class="text-muted">Debug Raw Content</summary>
+                                <pre><code>{{ draft.content|pprint }}</code></pre>
+                            </details>
+                        {% else %}
+                            <p class="text-danger"><strong>This draft could not be parsed automatically.</strong></p>
+                            <p>Below is the raw text from the AI. You can manually copy parts of it, or try to fix the formatting and re-parse.</p>
+                            <textarea class="form-control" rows="8" readonly>{{ draft.raw_response }}</textarea>
+                            <a href="{% url 'case_manager:retry_parse_suggestion' draft.pk %}" class="btn btn-sm btn-warning mt-2">Retry Parse</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-muted">No AI suggestions generated yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ evidence_json|json_script:"evidence-data" }}
+    <script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+    <script src="{% static 'js/custom_inserter_plugin.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const evidenceData = JSON.parse(document.getElementById('evidence-data').textContent);
+            window.narrativeData = evidenceData; // The plugin expects window.narrativeData
+
+            tinymce.init({
+                selector: '.tinymce-editor',
+                height: 250,
+                menubar: 'edit insert format table',
+                plugins: 'advlist autolink lists link table custom_inserter',
+                toolbar: 'undo redo | bold italic | bullist numlist | custom_inserter',
+            });
+        });
+
+        function copyText(text, targetId) {
+            const editor = tinymce.get(targetId);
+            if (editor) {
+                editor.setContent(text);
+            } else {
+                console.error('TinyMCE editor with ID ' + targetId + ' not found.');
+            }
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,138 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">Autopsie d'une stratégie légale</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'core:story_cinematic' pk=56 %}">L'exécution</a>
+                </li>
+                {% if user.is_authenticated and user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'protagonist_manager:protagonist_list' %}">Protagonistes</a>
+                    </li>
+
+                    <!-- Case Manager Dropdown - NEW -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="caseManagerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Case Manager
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="caseManagerDropdown">
+                            <li><a class="dropdown-item" href="{% url 'case_manager:case_list' %}">View All Cases</a></li>
+                            <li><a class="dropdown-item" href="{% url 'case_manager:case_create' %}">Create New Case</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'core:generate_global_timeline' %}">Global Timeline</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Argument Manager Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="argumentManagerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Argument Manager
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="argumentManagerDropdown">
+                            <li><a class="dropdown-item" href="{% url 'argument_manager:list' %}">View Narratives</a></li>
+                            <li><a class="dropdown-item" href="{% url 'argument_manager:create' %}">Create New Narrative</a></li>
+                            <li><a class="dropdown-item" href="{% url 'argument_manager:grouped-list' %}">Grouped Narratives</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Photos Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="photosManagerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Photos & Evidence
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="photosManagerDropdown">
+                            <li><h6 class="dropdown-header">Photo Management</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'photos:upload' %}">Upload Photo</a></li>
+                            <li><a class="dropdown-item" href="{% url 'photos:list' %}">Photo List</a></li>
+                            <li><a class="dropdown-item" href="{% url 'photos:timeline_entry' %}">Photo Timeline</a></li>
+                            <li><a class="dropdown-item" href="{% url 'photos:processing' %}">Batch Process Photos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Event Evidence</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'events:list' %}">Events List</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Document Evidence</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'photos:document_create' %}">Create Photo Document</a></li>
+                            <li><a class="dropdown-item" href="{% url 'photos:document_list' %}">Photo Documents List</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Email Manager Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="emailManagerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Email Manager
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="emailManagerDropdown">
+                            <li><a class="dropdown-item" href="{% url 'email_manager:thread_search' %}">Search Gmail</a></li>
+                            <li><a class="dropdown-item" href="{% url 'email_manager:email_upload' %}">Upload EML</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'email_manager:thread_list' %}">View Saved Threads</a></li>
+                            <li><a class="dropdown-item" href="{% url 'email_manager:quote_list' %}">View All Quotes</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Document Manager Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="docManagerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Document Manager
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="docManagerDropdown">
+                            <li><a class="dropdown-item" href="{% url 'document_manager:document_list' %}">View All Documents</a></li>
+                            {% if user.is_superuser %}
+                            <li><a class="dropdown-item" href="{% url 'document_manager:produced_create' %}">Create New Document</a></li>
+                            <li><a class="dropdown-item" href="{% url 'document_manager:produced_list' %}">Produced Documents</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'document_manager:perjury_element_list' %}">Perjury Elements</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- PDF Manager Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="pdfManagerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            PDF Manager
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="pdfManagerDropdown">
+                            <li><a class="dropdown-item" href="{% url 'pdf_manager:pdf_list' %}">View PDFs</a></li>
+                            <li><a class="dropdown-item" href="{% url 'pdf_manager:pdf_upload' %}">Upload PDF</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Google Chat Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="googleChatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Google Chat
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="googleChatDropdown">
+                            <li><a class="dropdown-item" href="{% url 'googlechat:chat_stream' %}">Chat Stream</a></li>
+                            <li><a class="dropdown-item" href="{% url 'googlechat:sequence_list' %}">Saved Sequences</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="navbar-text me-2">
+                            Welcome, {{ user.email }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'account_logout' %}">Logout</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'account_login' %}">Login</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

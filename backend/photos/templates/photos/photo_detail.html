@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load thumbnail %}
+
+{% block title %}Photo: {{ photo.file_name|default:'Untitled Photo' }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Photo Details: {{ photo.file_name|default:'Untitled Photo' }}</h1>
+        {% if event %}
+            <a href="{% url 'events:detail' event.pk %}" class="btn btn-outline-info">Back to Event</a>
+        {% endif %}
+    </div>
+
+    {# ADDED: Wrapper for navigation arrows #}
+    <div class="d-flex align-items-center justify-content-center">
+
+        {# Previous Photo Arrow #}
+        <div class="text-center me-3" style="width: 50px;">
+            {% if prev_photo_in_event %}
+                <a href="{% url 'photos:detail' prev_photo_in_event.pk %}" class="text-decoration-none fs-1" title="Previous Photo">‹</a>
+            {% endif %}
+        </div>
+
+        {# Main Content Card #}
+        <div class="flex-grow-1">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 text-center">
+                            {% if photo.file %}
+                                {% thumbnail photo.file "600x400" crop="center" as im %}
+                                    <img src="{{ im.url }}" class="img-fluid rounded border" alt="{{ photo.file_name|default:'Untitled Photo' }}">
+                                {% endthumbnail %}
+                                <p class="mt-2 text-muted small">Click <a href="{{ photo.file.url }}" target="_blank">here</a> to view original file.</p>
+                            {% else %}
+                                <p class="alert alert-warning">No image file uploaded for this photo.</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">File Name:</dt>
+                                <dd class="col-sm-8">{{ photo.file_name }}</dd>
+
+                                <dt class="col-sm-4">Date Original:</dt>
+                                <dd class="col-sm-8">{{ photo.datetime_original|date:"Y-m-d H:i"|default:"N/A" }}</dd>
+
+                                <dt class="col-sm-4">Camera Model:</dt>
+                                <dd class="col-sm-8">{{ photo.model|default:"N/A" }}</dd>
+
+                                <dt class="col-sm-4">File Path:</dt>
+                                <dd class="col-sm-8 text-break">{{ photo.file_path }}</dd>
+
+                                {# Add more fields as desired #}
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Next Photo Arrow #}
+        <div class="text-center ms-3" style="width: 50px;">
+            {% if next_photo_in_event %}
+                <a href="{% url 'photos:detail' next_photo_in_event.pk %}" class="text-decoration-none fs-1" title="Next Photo">›</a>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <hr>
+    <div class="mt-4">
+        <a href="{% url 'photos:list' %}" class="btn btn-secondary me-2">Back to Photo List</a>
+        <a href="{% url 'photos:update' pk=photo.pk %}" class="btn btn-warning me-2">Edit Photo</a>
+        <a href="{% url 'photos:delete' pk=photo.pk %}" class="btn btn-danger">Delete Photo</a>
+    </div>
+{% endblock %}

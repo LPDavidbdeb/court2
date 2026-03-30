@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}PDF Documents{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h1 class="h4 mb-0">PDF Documents</h1>
+                <a href="{% url 'pdf_manager:pdf_upload' %}" class="btn btn-sm btn-light">Upload New PDF</a>
+            </div>
+            <div class="card-body">
+                {% if grouped_documents %}
+                    <!-- Tab Navigation -->
+                    <ul class="nav nav-tabs" id="pdfTypeTabs" role="tablist">
+                        {% for type_name, documents in grouped_documents.items %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link {% if forloop.first %}active{% endif %}" id="tab-{{ forloop.counter }}" data-bs-toggle="tab" data-bs-target="#pane-{{ forloop.counter }}" type="button" role="tab" aria-controls="pane-{{ forloop.counter }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                                    {{ type_name }} <span class="badge bg-secondary">{{ documents|length }}</span>
+                                </button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="pdfTypeTabsContent">
+                        {% for type_name, documents in grouped_documents.items %}
+                            <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="pane-{{ forloop.counter }}" role="tabpanel" aria-labelledby="tab-{{ forloop.counter }}">
+                                <div class="list-group list-group-flush pt-3">
+                                    {% for doc in documents %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h5 class="mb-1"><a href="{% url 'pdf_manager:pdf_detail' doc.pk %}">{{ doc.title }}</a></h5>
+                                                <small class="text-muted">
+                                                    Document Date: {{ doc.document_date|date:"Y-m-d"|default:"N/A" }} | Uploaded: {{ doc.uploaded_at|date:"Y-m-d" }}
+                                                </small>
+                                            </div>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-success">Open PDF</a>
+                                                <a href="{% url 'pdf_manager:pdf_detail' doc.pk %}" class="btn btn-sm btn-outline-secondary">View Details</a>
+                                                <a href="{% url 'pdf_manager:pdf_update' doc.pk %}" class="btn btn-sm btn-outline-info">Edit</a>
+                                                <a href="{% url 'pdf_manager:pdf_delete' doc.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <p class="p-3">No documents of this type.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        No PDF documents have been uploaded yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Create Perjury Argument{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Create a New Perjury Argument</h1>
+    <p>Use this form to build a structured refutation of one or more false statements.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary mt-3">Save Argument</button>
+    </form>
+</div>
+
+{% endblock %}

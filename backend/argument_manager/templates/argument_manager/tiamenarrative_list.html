@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Narrative List{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Narrative Arguments</h1>
+        <a href="{% url 'argument_manager:create' %}" class="btn btn-primary">Create New Narrative</a>
+    </div>
+
+    <ul class="list-group">
+        {% for narrative in narratives %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{% url 'argument_manager:detail' narrative.pk %}" class="text-decoration-none text-dark flex-grow-1">
+                    <h5 class="mb-1">{{ narrative.titre }}</h5>
+                    <p class="mb-1">{{ narrative.resume|truncatewords_html:30|safe }}</p>
+                    <small class="text-muted">{{ narrative.get_type_argument_display }}</small>
+                </a>
+                <a href="{% url 'argument_manager:delete' narrative.pk %}" class="btn btn-danger btn-sm">Delete</a>
+            </li>
+        {% empty %}
+            <li class="list-group-item">No narratives have been created yet.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -1,0 +1,27 @@
+<div class="accordion" id="statementSourceAccordion">
+    {% for document, statements in grouped_statements %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-statement-doc-{{ document.pk }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-statement-doc-{{ document.pk }}" aria-expanded="false" aria-controls="collapse-statement-doc-{{ document.pk }}">
+                    {{ document.title }} ({{ statements|length }})
+                </button>
+            </h2>
+            <div id="collapse-statement-doc-{{ document.pk }}" class="accordion-collapse collapse" data-bs-parent="#statementSourceAccordion">
+                <div class="accordion-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for stmt in statements %}
+                            <li class="list-group-item">
+                                <input class="form-check-input me-1" type="checkbox" value="{{ stmt.pk }}" id="stmt-{{ stmt.pk }}">
+                                <label class="form-check-label" for="stmt-{{ stmt.pk }}">
+                                    {{ stmt.text|truncatewords:20 }}
+                                </label>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted p-3">No statements found in any documents.</p>
+    {% endfor %}
+</div>

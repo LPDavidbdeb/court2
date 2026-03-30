@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Printable Email: {{ email.subject }}</title>
+    <style>
+        body {
+            font-family: serif;
+            font-size: 12pt;
+            line-height: 1.4;
+            margin: 1in;
+        }
+        .email-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 12pt;
+            margin-bottom: 12pt;
+        }
+        .email-header h1 {
+            font-size: 18pt;
+            margin: 0;
+        }
+        .email-header table {
+            font-size: 11pt;
+            width: 100%;
+            margin-top: 10pt;
+            border-collapse: collapse;
+        }
+        .email-header th, .email-header td {
+            text-align: left;
+            vertical-align: top;
+            padding: 2pt 0;
+        }
+        .email-header th {
+            width: 80px; /* Fixed width for labels */
+            color: #555;
+        }
+        .email-body {
+            margin-top: 24pt;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="email-header">
+        <h1>{{ email.subject }}</h1>
+        <table>
+            <tr>
+                <th>From:</th>
+                <td>{{ email.sender }}</td>
+            </tr>
+            <tr>
+                <th>To:</th>
+                <td>{{ email.recipients_to }}</td>
+            </tr>
+            {% if email.recipients_cc %}
+            <tr>
+                <th>Cc:</th>
+                <td>{{ email.recipients_cc }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th>Date:</th>
+                <td>{{ email.date_sent|date:"F j, Y, g:i a T" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="email-body">
+        {{ email.body_plain_text|safe }}
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+<div class="accordion" id="pdfSourceAccordion">
+    {% for group in grouped_documents %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
+                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ forloop.counter }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse-{{ forloop.counter }}">
+                    {{ group.type_name }} ({{ group.documents|length }})
+                </button>
+            </h2>
+            <div id="collapse-{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading-{{ forloop.counter }}" data-bs-parent="#pdfSourceAccordion">
+                <div class="accordion-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for doc in group.documents %}
+                            <a href="#" class="list-group-item list-group-item-action pdf-source-item" data-doc-pk="{{ doc.pk }}" data-doc-url="{{ doc.file.url }}">
+                                {{ doc.title }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted p-3">No PDF documents have been uploaded yet.</p>
+    {% endfor %}
+</div>

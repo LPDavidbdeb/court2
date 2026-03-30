@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Event List{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Events</h1>
+        <a href="{% url 'events:create' %}" class="btn btn-primary">Add New Event</a>
+    </div>
+
+    {% if event_list %}
+        <meta name="csrf-token" content="{{ csrf_token }}">
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Date</th>
+                        <th>Explanation</th>
+                        <th>Linked Items</th>
+                        <th>Photo Previews</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in event_list %}
+                        <tr>
+                            <td>{{ event.get_display_id }}</td>
+                            <td>{{ event.date|date:"Y-m-d" }}</td>
+                            <td class="editable-explanation" data-pk="{{ event.pk }}" data-url="{% url 'events:ajax_update_explanation' event.pk %}" style="min-width: 250px;">
+                                <span class="explanation-text">{{ event.explanation|default:"(Click to add explanation)" }}</span>
+                            </td>
+                            <td>
+                                {% if event.linked_photos.exists %}
+                                    <div class="d-inline-block me-2 mb-1">
+                                        <i class="bi bi-image me-1 align-middle text-info"></i>
+                                        <span class="badge bg-info text-dark align-middle">{{ event.linked_photos.count }} photo(s)</span>
+                                    </div>
+                                {% endif %}
+                                {% if event.linked_email %}
+                                    <div class="d-inline-block me-2 mb-1">
+                                        <a href="#" title="{{ event.linked_email.subject|default:'Unnamed Email' }}" class="text-decoration-none">
+                                            <i class="bi bi-envelope-fill me-1 align-middle text-secondary"></i>
+                                            <span class="badge bg-secondary align-middle">1 email</span>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                {% if not event.linked_photos.exists and not event.linked_email %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap align-items-center">
+                                    {% for photo in event.linked_photos.all|slice:":4" %}
+                                        <a href="{{ photo.file.url }}" target="_blank" class="me-1 mb-1" title="{{ photo.file_name }}">
+                                            <img src="{{ photo.file.url }}" alt="{{ photo.file_name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 0.25rem;">
+                                        </a>
+                                    {% endfor %}
+                                    {% if event.linked_photos.count > 4 %}
+                                        <span class="badge bg-secondary align-self-center ms-1">+{{ event.linked_photos.count|add:"-4" }} more</span>
+                                    {% endif %}
+                                    {% if not event.linked_photos.exists %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{% url 'events:detail' event.pk %}" class="btn btn-sm btn-outline-info">View</a>
+                                <a href="{% url 'events:update' event.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                <a href="{% url 'events:delete' event.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">No events have been created yet.</div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        console.error('CSRF token meta tag not found!');
+        return;
+    }
+    const token = csrfToken.getAttribute('content');
+
+    document.querySelectorAll('.editable-explanation').forEach(cell => {
+        cell.addEventListener('click', function(event) {
+            if (cell.querySelector('textarea')) return;
+
+            const span = cell.querySelector('.explanation-text');
+            const currentExplanation = span.textContent.trim();
+            
+            const textarea = document.createElement('textarea');
+            textarea.className = 'form-control';
+            textarea.value = currentExplanation;
+            textarea.rows = 4;
+
+            cell.innerHTML = '';
+            cell.appendChild(textarea);
+            textarea.focus();
+
+            const saveChanges = () => {
+                const newExplanation = textarea.value.trim();
+                const url = cell.dataset.url;
+
+                if (newExplanation === currentExplanation) {
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                    return;
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': token
+                    },
+                    body: JSON.stringify({ explanation: newExplanation })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        cell.innerHTML = `<span class="explanation-text">${data.explanation}</span>`;
+                    } else {
+                        alert('Error updating explanation: ' + (data.error || 'Unknown error'));
+                        cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('A network error occurred. Please check the console and try again.');
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                });
+            };
+
+            textarea.addEventListener('blur', saveChanges);
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveChanges();
+                }
+                if (e.key === 'Escape') {
+                    cell.innerHTML = `<span class="explanation-text">${currentExplanation}</span>`;
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

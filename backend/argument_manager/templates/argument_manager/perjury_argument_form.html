@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}Edit Perjury Argument{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Edit Legal Argument for: {{ narrative.titre }}</h2>
+            <p>Use the fields below to build the 4-step legal argument. You can insert evidence from the list on the right using the editor's plugin.</p>
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-primary mt-3">Save Argument</button>
+                <a href="{% url 'argument_manager:detail' narrative.pk %}" class="btn btn-secondary mt-3">Cancel</a>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    Evidence Locker
+                </div>
+                <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
+                    <h6>Targeted Statements</h6>
+                    <ul class="list-group list-group-flush">
+                        {% for statement in narrative.targeted_statements.all %}
+                            <li class="list-group-item">{{ statement.text }}</li>
+                        {% empty %}
+                            <li class="list-group-item text-muted">None</li>
+                        {% endfor %}
+                    </ul>
+                    <hr>
+                    <h6>Evidence</h6>
+                    <ul class="list-group list-group-flush">
+                        {% for item in narrative.source_statements.all %}
+                            <li class="list-group-item">{{ item.text }}</li>
+                        {% endfor %}
+                        {% for item in narrative.evenements.all %}
+                            <li class="list-group-item">{{ item.explanation }}</li>
+                        {% endfor %}
+                        {% for item in narrative.citations_courriel.all %}
+                            <li class="list-group-item">{{ item.quote_text }}</li>
+                        {% endfor %}
+                        {% for item in narrative.citations_pdf.all %}
+                            <li class="list-group-item">{{ item.quote_text }}</li>
+                        {% endfor %}
+                        {% for item in narrative.photo_documents.all %}
+                            <li class="list-group-item">{{ item.title }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ narrative_data_json|json_script:"narrative-data" }}
+    <script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+    <script src="{% static 'js/custom_inserter_plugin.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const narrativeData = JSON.parse(document.getElementById('narrative-data').textContent);
+            window.narrativeData = narrativeData;
+
+            tinymce.init({
+                selector: '.tinymce-editor',
+                height: 300,
+                menubar: 'file edit view insert format tools table help',
+                plugins: 'advlist autolink lists link image charmap print preview anchor table custom_inserter',
+                toolbar: 'undo redo | bold italic underline | bullist numlist | custom_inserter | table',
+            });
+        });
+    </script>
+{% endblock %}

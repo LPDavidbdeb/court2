@@ -1,0 +1,12 @@
+<form action="{% url 'email_manager:add_quote' email.pk %}" method="post" id="addQuoteForm">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="id_quote_text" class="form-label">Quote Text</label>
+        <textarea name="quote_text" class="form-control" id="id_quote_text" rows="4" required></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="id_trames_narratives" class="form-label">Narrative Frames</label>
+        {{ form.trames_narratives }}
+        <div class="form-text">Select one or more narrative frames to associate with this quote.</div>
+    </div>
+</form>

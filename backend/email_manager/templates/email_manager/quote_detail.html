@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Email Quote Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-dark">
+                    <h1 class="h4 mb-0">Email Quote</h1>
+                </div>
+                <div class="card-body">
+                    <blockquote class="blockquote">
+                        <p class="mb-0">"{{ quote.quote_text }}"</p>
+                    </blockquote>
+                    <hr>
+                    <p class="card-text">
+                        <strong>Source Email:</strong> 
+                        <a href="{% url 'email_manager:email_detail' quote.email.pk %}">{{ quote.email.subject }}</a>
+                    </p>
+                    <p class="card-text">
+                        <strong>Sender:</strong> 
+                        {% if quote.email.sender_protagonist %}
+                            <a href="{{ quote.email.sender_protagonist.get_absolute_url }}">{{ quote.email.sender_protagonist.get_full_name }}</a>
+                        {% else %}
+                            {{ quote.email.sender }}
+                        {% endif %}
+                    </p>
+                    <p class="card-text"><strong>Date Sent:</strong> {{ quote.email.date_sent|date:"F j, Y, P" }}</p>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'protagonist_manager:protagonist_detail' quote.email.thread.protagonist.pk %}" class="btn btn-secondary">Back to Protagonist</a>
+                        <a href="{% url 'email_manager:quote_list' %}" class="btn btn-outline-secondary">View All Quotes</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

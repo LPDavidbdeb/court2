@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ email.subject }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>{{ email.subject }}</h1>
+    <hr>
+    <p><strong>From:</strong> {{ email.sender }}</p>
+    <p><strong>To:</strong> {{ email.recipients_to }}</p>
+    {% if email.recipients_cc %}
+        <p><strong>Cc:</strong> {{ email.recipients_cc }}</p>
+    {% endif %}
+    <p><strong>Date:</strong> {{ email.date_sent|date:"F d, Y, P" }}</p>
+
+    <div class="mt-4">
+        <pre>{{ cleaned_body }}</pre>
+    </div>
+
+    <div class="mt-4">
+        <h3>Quotes</h3>
+        {% for quote in quotes %}
+            <blockquote class="blockquote">
+                <p>{{ quote.quote_text }}</p>
+            </blockquote>
+        {% empty %}
+            <p>No quotes available for this email.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% comment %}
+Logic: We define "Louis Philippe David" as the "self" user, who appears on the right.
+The other participant automatically appears on the left.
+{% endcomment %}
+{% if msg.sender.name == "Louis Philippe David" %}
+    <div class="message-row participant-right" data-msg-id="{{ msg.id }}">
+        <div class="bubble bubble-right">
+{% else %}
+    <div class="message-row participant-left" data-msg-id="{{ msg.id }}">
+        <div class="bubble bubble-left">
+{% endif %}
+            <div class="msg-meta">{{ msg.sender.name|default:"Unknown" }}</div>
+            
+            {{ msg.text_content|linebreaksbr }}
+            
+            <div class="msg-time">
+                {{ msg.timestamp|date:"M d, Y H:i" }}
+            </div>
+        </div>
+    </div>

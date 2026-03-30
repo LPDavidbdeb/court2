@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% load document_extras %}
+
+{% block title %}{{ document.title }} - The Truth{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* --- CORE VARIABLES --- */
+    :root {
+        --cine-bg-color: 255, 255, 255; /* Starts White */
+    }
+
+    body {
+        /* The background color is dynamic controlled by JS */
+        background-color: rgb(var(--cine-bg-color)) !important;
+        transition: background-color 0.1s linear;
+        overflow-x: hidden;
+        margin: 0;
+    }
+
+    /* --- PHASE 1 & 2: CINEMATIC SCROLL --- */
+    .cinematic-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+        padding-bottom: 100px;
+        font-family: 'Georgia', serif;
+    }
+
+    /* 1. Reading Context */
+    .document-context {
+        padding-top: 50px;
+        margin-bottom: 20vh;
+    }
+
+    .context-node {
+        margin-bottom: 1.5rem;
+        /* Text is BLACK. Disappears when bg turns BLACK. */
+        color: rgb(0, 0, 0);
+        transition: opacity 0.5s ease;
+    }
+
+    /* 2. Transition Zone (The Spacer) */
+    .transition-zone {
+        height: 50vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        pointer-events: none;
+        color: #aaa;
+    }
+
+    .fade-instruction {
+        font-style: italic;
+        opacity: 1;
+        transition: opacity 0.5s;
+    }
+
+    /* 3. The Revelation List (Intermediate step) */
+    .revelation-list {
+        min-height: 80vh;
+        padding-top: 50px;
+    }
+
+    .revelation-node {
+        margin-bottom: 2rem;
+        padding-left: 20px;
+        border-left: 4px solid #dc3545; /* Red marker */
+        color: #fff; /* Visible on Black */
+    }
+
+    /* --- PHASE 3: THE CONFRONTATION (Split Screen) --- */
+
+    /* Mobile Fallback */
+    .confrontation-wrapper {
+        display: block;
+        background-color: #000; /* Pure black base */
+        padding-bottom: 20vh;
+    }
+
+    /* Desktop Grid */
+    @media (min-width: 992px) {
+        .confrontation-block {
+            display: flex;
+            min-height: 100vh;
+            border-top: 1px solid #333;
+        }
+
+        /* LEFT PANE: Sticky Allegation */
+        .pane-allegation {
+            width: 40%;
+            background-color: #000;
+            color: #fff;
+            padding: 4rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-right: 1px solid #333;
+        }
+
+        /* RIGHT PANE: Scrolling Evidence */
+        .pane-evidence {
+            width: 50%;
+            background-color: #f8f9fa;
+            color: #333;
+            /* No padding here, we let items handle it */
+            padding: 0;
+        }
+
+        /* THE STREAM ITEM */
+        .evidence-item {
+            /* Generous vertical spacing creates the 'flow' */
+            padding: 10vh 4rem;
+
+            /* Center content horizontally */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
+            /* Initial State: Invisible and slightly small */
+            opacity: 0.1; /* Start visible but faint for debug, or 0 for production */
+            transform: scale(0.95);
+            filter: blur(2px);
+
+            /* The JS will update these properties constantly */
+            transition: opacity 0.1s ease-out, transform 0.1s ease-out, filter 0.1s ease-out;
+
+            /* Ensure it doesn't overflow horizontally */
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* When JS marks it active (fallback class) */
+        .evidence-item.active {
+            opacity: 1;
+            transform: scale(1);
+            filter: blur(0);
+        }
+    }
+
+    /* Meta Header for Cluster */
+    .cluster-meta {
+        border-bottom: 1px solid #333;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="cinematic-wrapper">
+
+    <div class="document-context">
+        <div class="text-center mb-5">
+            <h1 class="display-4">{{ document.title }}</h1>
+            <p class="text-muted">Source: {{ document.get_source_type_display }}</p>
+            <hr>
+        </div>
+
+        {% for node in nodes %}
+            {% if node.content_object.text %}
+                <div class="context-node" style="margin-left: {{ node.indent_pixels }}px;">
+                    <p>
+                        {% if node.numbering %}<strong>{{ node.numbering }}</strong>{% endif %}
+                        {{ node.content_object.text }}
+                    </p>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="transition-zone" id="fade-trigger">
+        <div class="fade-instruction">
+            <i class="fas fa-arrow-down"></i><br>
+            Continuer pour isoler les faux énoncés...
+        </div>
+    </div>
+
+    <div class="revelation-list">
+        <h2 class="text-danger mb-5 text-center">Énoncés Identifiés Faux</h2>
+
+        {% for node in nodes %}
+            {% if not node.content_object.is_true and node.content_object.is_falsifiable %}
+                <div class="revelation-node">
+                    <p class="mb-1">
+                        {% if node.numbering %}<strong>{{ node.numbering }}</strong>{% endif %}
+                        {{ node.content_object.text }}
+                    </p>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+</div>
+
+<div class="confrontation-wrapper">
+    <div class="text-center text-white py-5">
+        <h3>ANALYSE CONTRADICTOIRE</h3>
+        <p class="text-muted">Regroupement par Contestations</p>
+        <i class="fas fa-chevron-down text-white"></i>
+    </div>
+
+    {% for block in confrontation_blocks %}
+    <div class="confrontation-block">
+
+        <div class="pane-allegation">
+            <div class="cluster-meta">
+                <small class="text-danger text-uppercase">
+                    <i class="fas fa-gavel"></i> Contestation #{{ forloop.counter }}
+                </small>
+                <h4 class="text-white mt-2">{{ block.title }}</h4>
+                <div class="text-muted small">
+                    Dossier: {{ block.case_title }}
+                </div>
+            </div>
+
+            <blockquote class="blockquote">
+                {% for stmt in block.statements %}
+                    <div class="mb-4">
+                        {% if stmt.numbering %}
+                            <strong class="text-danger me-2">{{ stmt.numbering }}</strong>
+                        {% endif %}
+                        <span>"{{ stmt.text }}"</span>
+                    </div>
+                {% endfor %}
+            </blockquote>
+
+            <div class="text-muted small border-top pt-3 mt-auto" style="border-color: #333 !important;">
+                Status: <span class="text-danger">RÉFUTÉE</span><br>
+                Éléments de preuve cumulés: {{ block.evidence|length }}
+            </div>
+        </div>
+
+        <div class="pane-evidence">
+
+            {% for item in block.evidence %}
+                <div class="evidence-item">
+
+                    <div class="d-flex justify-content-end mb-2">
+                        {% if item.exhibit_label %}
+                            <span class="badge bg-black text-white rounded-0 px-3 py-2" style="font-size: 0.9rem;">
+                                PIÈCE {{ item.exhibit_label }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    {% if item.type == 'email' %}
+                        {% include "document_manager/cinematic/evidence/_email.html" with evidence=item.object %}
+
+                    {% elif item.type == 'pdf' %}
+                        {% include "document_manager/cinematic/evidence/_pdf.html" with evidence=item.object %}
+
+                    {% elif item.type == 'event' %}
+                        {% include "document_manager/cinematic/evidence/_event.html" with evidence=item.object %}
+
+                    {% elif item.type == 'photo' %}
+                        {% include "document_manager/cinematic/evidence/_photo.html" with evidence=item.object %}
+
+                    {% elif item.type == 'chat' %}
+                        {% include "document_manager/cinematic/evidence/_chat.html" with evidence=item.object %}
+
+                    {% else %}
+                        <div class="alert alert-secondary">Type de preuve non supporté: {{ item.type }}</div>
+                    {% endif %}
+
+                </div>
+            {% empty %}
+                <div class="evidence-item d-flex align-items-center justify-content-center" style="min-height: 50vh;">
+                    <p class="text-muted fst-italic">Aucune preuve liée à cette allégation.</p>
+                </div>
+            {% endfor %}
+
+            <div style="height: 50vh;"></div>
+        </div>
+    </div>
+    {% empty %}
+        <div class="text-center text-white py-5">
+            <p>Aucun regroupement narratif trouvé pour ce document.</p>
+        </div>
+    {% endfor %}
+
+    <div class="text-center text-white py-5" style="height: 50vh; display: flex; align-items: center; justify-content: center;">
+        <h1>FIN DE L'ANALYSE</h1>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const triggerZone = document.getElementById('fade-trigger');
+        const instruction = document.querySelector('.fade-instruction');
+        const contextNodes = document.querySelectorAll('.context-node');
+
+        // Colors
+        const startColor = [255, 255, 255]; // White
+        const endColor = [0, 0, 0];         // Black
+
+        if (triggerZone) {
+            window.addEventListener('scroll', function() {
+                const rect = triggerZone.getBoundingClientRect();
+                const windowHeight = window.innerHeight;
+
+                let progress = 0;
+
+                // Tune these for how fast the fade happens
+                const startFade = windowHeight;
+                const endFade = windowHeight * 0.2;
+
+                if (rect.top <= startFade) {
+                    const distance = startFade - rect.top;
+                    const totalDistance = startFade - endFade;
+                    progress = Math.min(Math.max(distance / totalDistance, 0), 1);
+                }
+
+                // 1. Interpolate Background
+                const currentBg = interpolateColor(startColor, endColor, progress);
+                document.documentElement.style.setProperty('--cine-bg-color', `${currentBg.join(',')}`);
+
+                // 2. Hide instruction text
+                if (instruction) {
+                    instruction.style.opacity = (progress > 0.5) ? '0' : '1';
+                }
+
+                // 3. Fade out the reading context (Phase 1)
+                contextNodes.forEach(node => {
+                    node.style.opacity = Math.max(1 - (progress * 1.5), 0);
+                });
+            });
+        }
+
+        // Helper to mix colors
+        function interpolateColor(color1, color2, factor) {
+            var result = color1.slice();
+            for (var i = 0; i < 3; i++) {
+                result[i] = Math.round(result[i] + factor * (color2[i] - color1[i]));
+            }
+            return result;
+        }
+
+        // --- PHASE 3: STREAM FADER ---
+        const evidenceItems = document.querySelectorAll('.evidence-item');
+
+        if (evidenceItems.length > 0) {
+            // Function to update visual state based on scroll position
+            function updateStream() {
+                const windowHeight = window.innerHeight;
+                const centerLine = windowHeight / 2;
+
+                evidenceItems.forEach(item => {
+                    const rect = item.getBoundingClientRect();
+
+                    // Center point of the item itself
+                    const itemCenter = rect.top + (rect.height / 2);
+
+                    // Distance from the screen center
+                    const dist = Math.abs(centerLine - itemCenter);
+
+                    // Logic:
+                    // 0 dist = 1.0 opacity
+                    // 400px dist = 0.0 opacity (adjust 'range' to tighten/loosen the spotlight)
+                    const range = windowHeight * 0.35;
+
+                    let opacity = 1 - (dist / range);
+
+                    // Clamp values
+                    opacity = Math.max(0, Math.min(1, opacity));
+
+                    // Apply styles directly for performance
+                    item.style.opacity = opacity;
+
+                    // Subtle scale effect (0.95 -> 1.0)
+                    const scale = 0.95 + (opacity * 0.05);
+                    item.style.transform = `scale(${scale})`;
+
+                    // Blur effect (2px -> 0px)
+                    const blur = (1 - opacity) * 3;
+                    item.style.filter = `blur(${blur}px)`;
+                });
+
+                // Request next frame
+                requestAnimationFrame(updateStream);
+            }
+
+            // Start the loop
+            updateStream();
+        }
+    });
+</script>
+{% endblock %}

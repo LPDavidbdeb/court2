@@ -1,0 +1,55 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatSequencesModal = new bootstrap.Modal(document.getElementById('selectChatSequencesModal'));
+    const chatSequencesModalBody = document.getElementById('chat-sequences-modal-body');
+    const saveChatSequenceChangesBtn = document.getElementById('save-chat-sequence-changes-btn');
+    const narrativeId = {{ narrative.pk }};
+
+    // Load sequences into modal when it's opened
+    document.getElementById('selectChatSequencesModal').addEventListener('show.bs.modal', function () {
+        fetch(`/arguments/${narrativeId}/ajax_get_chat_sequences/`)
+            .then(response => response.text())
+            .then(html => {
+                chatSequencesModalBody.innerHTML = html;
+            });
+    });
+
+    // Save selected sequences
+    saveChatSequenceChangesBtn.addEventListener('click', function() {
+        const selectedIds = Array.from(chatSequencesModalBody.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+        
+        fetch(`/arguments/${narrativeId}/ajax_update_chat_sequences/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ sequence_ids: selectedIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the display list on the main page
+                const displayList = document.getElementById('chat-sequences-display-list');
+                displayList.innerHTML = '';
+                if (data.sequences.length > 0) {
+                    data.sequences.forEach(seq => {
+                        const a = document.createElement('a');
+                        a.href = `/chat/sequences/${seq.pk}/`;
+                        a.className = 'list-group-item list-group-item-action';
+                        a.innerHTML = `${seq.title}<br><small class="text-muted">${seq.message_count} messages from ${seq.start_date}</small>`;
+                        displayList.appendChild(a);
+                    });
+                } else {
+                    displayList.innerHTML = '<div class="list-group-item text-muted">No chat sequences linked.</div>';
+                }
+                // Update the count in the accordion header
+                document.querySelector('#headingChatSequences button').textContent = `Chat Sequences (${data.sequences.length})`;
+                chatSequencesModal.hide();
+            } else {
+                alert('Error updating sequences: ' + data.error);
+            }
+        });
+    });
+});
+</script>

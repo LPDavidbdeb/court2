@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Interactive View: {{ document.item }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* NEW: Custom styles for smaller toggle switches */
+    .form-switch.form-switch-sm .form-check-input {
+        height: 1.2rem; /* Adjust height */
+        width: 2.4rem;  /* Adjust width */
+        margin-top: 0.25rem;
+    }
+    .form-switch.form-switch-sm .form-check-label {
+        font-size: 0.875rem; /* Smaller label text */
+        padding-top: 0.25rem;
+    }
+
+    .claim-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .claim-text {
+        flex-grow: 1;
+    }
+    .toggles {
+        flex-shrink: 0;
+        width: 220px; /* Adjust width as needed */
+        display: flex;
+        justify-content: space-around;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="d-flex justify-content-end mb-3">
+            <a href="{% url 'document_manager:document_list' %}" class="btn btn-sm btn-secondary">Back to List</a>
+        </div>
+
+        <div class="card shadow-sm" style="border-left: none; border-right: none;">
+            <div class="card-body" style="font-family: 'Times New Roman', serif;">
+                
+                <h2 class="text-center mb-4">{{ document.item }}</h2>
+                <p class="text-center">{{ document.text }}</p>
+                <hr class="my-4">
+
+                {% for node in formatted_nodes %}
+                    <div class="claim-row" style="padding-left: {{ node.indent_pixels }}px;">
+                        <div class="claim-text">
+                            <span class="fw-bold me-2">{{ node.numbering }}</span>
+                            <span>{{ node.text }}</span>
+                        </div>
+                        
+                        {% if node.get_depth > 2 %}
+                        <div class="toggles">
+                            {# ADDED form-switch-sm class for smaller toggles #}
+                            <div class="form-check form-switch form-switch-sm">
+                                <input class="form-check-input is-true-toggle" type="checkbox" role="switch" 
+                                       id="is-true-{{ node.pk }}" data-node-id="{{ node.pk }}" {% if node.is_true %}checked{% endif %}>
+                                <label class="form-check-label" for="is-true-{{ node.pk }}">Is True</label>
+                            </div>
+                            <div class="form-check form-switch form-switch-sm">
+                                <input class="form-check-input is-falsifiable-toggle" type="checkbox" role="switch" 
+                                       id="is-falsifiable-{{ node.pk }}" data-node-id="{{ node.pk }}" 
+                                       {% if node.is_falsifiable %}checked{% endif %} {% if node.is_true %}disabled{% endif %}>
+                                <label class="form-check-label" for="is-falsifiable-{{ node.pk }}">Falsifiable</label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = getCookie('csrftoken');
+
+    document.querySelectorAll('.is-true-toggle, .is-falsifiable-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const nodeId = this.dataset.nodeId;
+            const isChecked = this.checked;
+            const fieldToUpdate = this.classList.contains('is-true-toggle') ? 'is_true' : 'is_falsifiable';
+
+            if (fieldToUpdate === 'is_true') {
+                const falsifiableToggle = document.getElementById(`is-falsifiable-${nodeId}`);
+                if (isChecked) {
+                    falsifiableToggle.checked = false;
+                    falsifiableToggle.disabled = true;
+                    sendUpdateRequest(nodeId, 'is_falsifiable', null);
+                } else {
+                    falsifiableToggle.disabled = false;
+                }
+            }
+
+            sendUpdateRequest(nodeId, fieldToUpdate, isChecked);
+        });
+    });
+
+    function sendUpdateRequest(nodeId, field, value) {
+        fetch('{% url "document_manager:update_node_truth" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                node_id: nodeId,
+                field: field,
+                value: value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Update successful:', data.message);
+            } else {
+                console.error('Update failed:', data.message);
+                alert('Error updating node: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX error:', error);
+            alert('An unexpected error occurred.');
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

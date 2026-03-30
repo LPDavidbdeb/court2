@@ -1,0 +1,8 @@
+<p>{{ node.content_object.explanation }}</p>
+<div class="d-flex flex-wrap">
+    {% for photo in node.content_object.linked_photos.all %}
+        <a href="{{ photo.file.url }}" target="_blank" class="me-2 mb-2">
+            <img src="{{ photo.file.url }}" alt="Thumbnail for {{ photo.file_name }}" class="img-thumbnail" style="max-height: 80px; max-width: 80px;">
+        </a>
+    {% endfor %}
+</div>

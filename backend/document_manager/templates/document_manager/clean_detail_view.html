@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Formatted Document: {{ document.item }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        {# The 'Back to List' button is now at the top for easy access #}
+        <div class="d-flex justify-content-end mb-3">
+            <a href="{% url 'document_manager:document_list' %}" class="btn btn-sm btn-secondary">Back to List</a>
+        </div>
+
+        {# The card now has no side borders for a cleaner look #}
+        <div class="card shadow-sm" style="border-left: none; border-right: none;">
+            <div class="card-body" style="font-family: 'Times New Roman', serif;">
+                
+                <h2 class="text-center mb-4">{{ document.item }}</h2>
+                <p class="text-center">{{ document.text }}</p>
+                <hr class="my-4">
+
+                {% for node in formatted_nodes %}
+                    <div style="padding-left: {{ node.indent_pixels }}px; margin-bottom: 0.5rem;">
+                        <span class="fw-bold me-2">{{ node.numbering }}</span>
+                        <span>{{ node.text }}</span>
+                    </div>
+                {% endfor %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

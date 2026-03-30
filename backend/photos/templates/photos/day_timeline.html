@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Photo Timeline - {{ target_date|date:"F j, Y" }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+        list-style: none;
+    }
+    .timeline:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 40px;
+        width: 3px;
+        background-color: #e9ecef;
+        margin-left: -1.5px;
+    }
+    .timeline-item {
+        margin-bottom: 20px;
+        position: relative; /* This is the key for positioning the badge */
+    }
+    .timeline-item:before, .timeline-item:after {
+        content: " ";
+        display: table;
+    }
+    .timeline-item:after {
+        clear: both;
+    }
+    .timeline-badge {
+        color: #fff;
+        width: 80px;
+        height: 80px;
+        line-height: 80px;
+        font-size: 1.2em;
+        text-align: center;
+        position: absolute;
+        top: 16px;
+        left: 40px;
+        margin-left: -40px;
+        background-color: #999;
+        z-index: 100;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    .timeline-badge .time-h, .timeline-badge .time-m {
+        display: block;
+        line-height: 1.2;
+    }
+    .timeline-badge .time-h { font-weight: bold; }
+    .timeline-badge .time-m { font-size: 0.8em; }
+
+    .timeline-panel {
+        width: calc(100% - 90px);
+        float: right;
+        border: 1px solid #d4d4d4;
+        border-radius: 2px;
+        padding: 20px;
+        position: relative;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.175);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form action="{% url 'photos:bulk_delete' %}" method="post" id="bulk-delete-form">
+    {% csrf_token %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="btn-group">
+            {% if prev_day %}
+                <a href="{% url 'photos:day_timeline' prev_day.year prev_day.month prev_day.day %}" class="btn btn-outline-secondary">‹ Previous Day</a>
+            {% else %}
+                <a href="#" class="btn btn-outline-secondary disabled">‹ Previous Day</a>
+            {% endif %}
+            {% if next_day %}
+                <a href="{% url 'photos:day_timeline' next_day.year next_day.month next_day.day %}" class="btn btn-outline-secondary">Next Day ›</a>
+            {% else %}
+                <a href="#" class="btn btn-outline-secondary disabled">Next Day ›</a>
+            {% endif %}
+        </div>
+        <h1 class="mb-0">{{ target_date|date:"l, F j, Y" }}</h1>
+        <div>
+            <button type="submit" class="btn btn-danger">Delete Selected</button>
+        </div>
+    </div>
+
+    {% if photos_in_day %}
+        <ul class="timeline">
+            {% for timestamp, photos in grouped_photos.items %}
+                {# FIXED: Added the timeline-item class to the <li> element #}
+                <li class="timeline-item">
+                    <div class="timeline-badge primary">
+                        <span class="time-h">{{ timestamp|date:"H:i" }}</span>
+                        <span class="time-m">{{ timestamp|date:"s" }}s</span>
+                    </div>
+                    <div class="timeline-panel">
+                        <div class="timeline-body">
+                            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-2">
+                                {% for photo in photos %}
+                                    <div class="col">
+                                        <div class="card h-100 shadow-sm">
+                                            <a href="{{ photo.get_absolute_url }}">
+                                                <img src="{{ photo.file.url }}" class="card-img-top" alt="{{ photo.file_name }}" style="object-fit: cover; height: 150px;">
+                                            </a>
+                                            <div class="card-footer d-flex justify-content-between align-items-center">
+                                                <div class="form-check">
+                                                    <input class="form-check-input photo-checkbox" type="checkbox" name="photo_ids" value="{{ photo.pk }}" id="photo-{{ photo.pk }}">
+                                                    <label class="form-check-label small" for="photo-{{ photo.pk }}">Select</label>
+                                                </div>
+                                                <a href="{% url 'photos:update' pk=photo.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            No photos found for this day.
+        </div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteForm = document.getElementById('bulk-delete-form');
+    deleteForm.addEventListener('submit', function(event) {
+        const checkedCount = document.querySelectorAll('.photo-checkbox:checked').length;
+        if (checkedCount === 0) {
+            alert('Please select at least one photo to delete.');
+            event.preventDefault();
+            return;
+        }
+        if (!confirm(`Are you sure you want to delete ${checkedCount} selected photo(s)?`)) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

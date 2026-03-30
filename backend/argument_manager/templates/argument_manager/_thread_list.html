@@ -1,0 +1,13 @@
+<div class="list-group">
+    {% for thread in threads %}
+        <a href="#" class="list-group-item list-group-item-action thread-item" data-thread-pk="{{ thread.pk }}">
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{ thread.subject|default:"(No Subject)"|truncatewords:10 }}</h6>
+                <small class="text-muted">{{ thread.first_email_date|date:"Y-m-d" }}</small>
+            </div>
+            <p class="mb-1 small text-muted">Participants: {{ thread.participants|truncatechars:100 }}</p>
+        </a>
+    {% empty %}
+        <p class="text-muted">No email threads found.</p>
+    {% endfor %}
+</div>

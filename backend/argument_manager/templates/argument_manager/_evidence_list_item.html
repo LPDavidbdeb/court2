@@ -1,0 +1,43 @@
+{% load evidence_tags %}
+{% load static %}
+
+{% get_evidence_source_url evidence as source_url %}
+{% get_evidence_type evidence as evidence_type %}
+
+<li class="list-group-item d-flex justify-content-between align-items-center" id="evidence-item-{{ evidence.pk }}">
+    <div class="flex-grow-1 me-2">
+        {% if source_url %}
+            <a href="{{ source_url }}" class="text-decoration-none text-body" title="Go to source">
+                {% if evidence_type == 'EmailQuote' %}
+                    <div class="fw-bold">Email Quote</div>
+                    <div>"{{ evidence.quote_text|truncatewords:20 }}"</div> {# Quote text, not bold/muted #}
+                    <p class="small text-muted ms-4 mb-0">- {{ evidence.email.sender_protagonist }}, {{ evidence.email.date_sent|date:"Y-m-d H:i" }}</p>
+                {% elif evidence_type == 'PDFQuote' %}
+                    <div class="fw-bold">PDF Quote</div>
+                    <div>"{{ evidence.quote_text|truncatewords:20 }}"</div> {# Quote text, not bold/muted #}
+                    <p class="small text-muted ms-4 mb-0">- {{ evidence.pdf.author }}, {{ evidence.pdf.creation_date|date:"Y-m-d H:i" }}</p>
+                {% elif evidence_type == 'PhotoDocument' %}
+                    <div class="d-flex align-items-center">
+                        <img src="{{ evidence.file.url }}" alt="{{ evidence.title }}" class="img-thumbnail me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ evidence.title }}</div>
+                            {% if evidence.description %}<p class="small text-muted mb-0">"{{ evidence.description|truncatewords:15 }}"</p>{% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    {{ evidence|truncatewords:15 }}
+                {% endif %}
+            </a>
+        {% else %}
+            <div class="text-body">
+                {% if evidence_type == 'Event' %}
+                    <div class="fw-bold">{{ evidence.date|date:"Y-m-d" }}</div>
+                    {{ evidence.explanation|truncatewords:15 }}
+                {% else %}
+                    {{ evidence|truncatewords:15 }}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    {% remove_evidence_button evidence %}
+</li>

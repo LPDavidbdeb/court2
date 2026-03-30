@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load document_extras %}
+
+{% block title %}Formatted Document: {{ document.title }}{% endblock %}
+
+{% block extra_head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="d-flex justify-content-end mb-3">
+            <a href="{% url 'document_manager:produced_list' %}" class="btn btn-sm btn-secondary">Back to List</a>
+        </div>
+
+        <div class="card shadow-sm" style="border-left: none; border-right: none;">
+            <div class="card-body" style="font-family: 'Times New Roman', serif;">
+                
+                <h2 class="text-center mb-4">{{ document.title }}</h2>
+                {% if document.text %}
+                    <p class="text-center">{{ document.text }}</p>
+                    <hr class="my-4">
+                {% endif %}
+
+                {# The main body of the document #}
+                {% include "document_manager/produced/_node_tree.html" with nodes=formatted_nodes mode='clean' %}
+
+                {# The single, document-wide annex at the end #}
+                {% if annex_source_docs %}
+                    <hr class="my-5">
+                    <div class="annex-section">
+                        <h3 class="text-center">ANNEXE</h3>
+                        
+                        <h4 class="mt-4">Liste des pièces</h4>
+                        <ul class="list-group list-group-numbered">
+                            {% for doc in annex_source_docs %}
+                                <li class="list-group-item list-group-item-sm">
+                                    <strong>{{ annex_exhibit_map|get_item:doc }}:</strong>
+                                    {% if doc|model_name == 'email' %}
+                                        Courriel - "{{ doc.subject }}"
+                                    {% elif doc|model_name == 'pdfdocument' %}
+                                        Document PDF - "{{ doc.title }}"
+                                    {% elif doc|model_name == 'photodocument' %}
+                                        Document Photo - "{{ doc.title }}"
+                                    {% elif doc|model_name == 'event' %}
+                                        Événement - {{ doc.date|date:"Y-m-d" }}
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+
+                        <h4 class="mt-4">Détail des preuves</h4>
+                        <ul class="list-group list-group-flush">
+                            {% for item in annex_evidence_items %}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        {% if item|model_name == 'emailquote' %}
+                                            <div class="fw-bold">Citation de courriel</div>
+                                            "{{ item.quote_text }}"
+                                        {% elif item|model_name == 'pdfquote' %}
+                                            <div class="fw-bold">Citation de PDF</div>
+                                            "{{ item.quote_text }}" (p. {{ item.page_number }})
+                                        {% elif item|model_name == 'photodocument' %}
+                                            <div class="fw-bold">Document Photo</div>
+                                            {{ item.title }}
+                                        {% elif item|model_name == 'event' %}
+                                            <div class="fw-bold">Événement</div>
+                                            {{ item.explanation }}
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">
+                                        {% if item|model_name == 'emailquote' or item|model_name == 'pdfquote' %}
+                                            {{ annex_item_map|get_item:item }}
+                                        {% else %}
+                                            {{ annex_exhibit_map|get_item:item }}
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.editable-summary').forEach(summaryContent => {
+        let isEditing = false;
+
+        summaryContent.addEventListener('click', function () {
+            if (isEditing) return;
+            isEditing = true;
+
+            tinymce.init({
+                target: summaryContent,
+                inline: true,
+                menubar: false,
+                plugins: 'advlist autolink lists table', 
+                toolbar: 'undo redo | bold italic underline | bullist numlist | table',
+                license_key: 'gpl',
+                setup: function (editor) {
+                    editor.on('init', () => editor.focus());
+                    editor.on('blur', () => saveContent(editor, summaryContent.dataset.updateUrl));
+                    editor.on('remove', () => isEditing = false);
+                }
+            });
+        });
+    });
+
+    function saveContent(editor, updateUrl) {
+        if (!editor.isDirty()) {
+            setTimeout(() => editor.destroy(), 0);
+            return;
+        }
+
+        const csrfToken = document.querySelector('[name=csrf-token]').content;
+
+        fetch(updateUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ resume: editor.getContent() })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) alert('Error saving summary: ' + data.error);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+        })
+        .finally(() => {
+            setTimeout(() => editor.destroy(), 0);
+        });
+    }
+});
+</script>
+{% endblock %}

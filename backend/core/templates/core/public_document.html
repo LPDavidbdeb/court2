@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>{{ document.title }}</h1>
+    <hr>
+    <p><strong>Author:</strong> {{ document.author.get_full_name|default:"N/A" }}</p>
+    <p><strong>Date:</strong> {{ document.document_original_date|date:"F d, Y"|default:"N/A" }}</p>
+
+    <div class="mt-4">
+        {% for node in formatted_nodes %}
+            <div style="margin-left: {{ node.indent_pixels }}px;">
+                <p><strong>{{ node.numbering }}</strong> {{ node.content_object.text }}</p>
+            </div>
+        {% empty %}
+            <p>No content available for this document.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.title }} (Clean View){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">{{ document.title }}</h1>
+    
+    {% for node in formatted_nodes %}
+        <div style="padding-left: {{ node.indent_pixels }}px; margin-bottom: 1rem;">
+            <p>
+                <strong>{{ node.numbering }}</strong>
+                {% if node.content_object %}
+                    {{ node.content_object.text|safe }}
+                {% endif %}
+            </p>
+        </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

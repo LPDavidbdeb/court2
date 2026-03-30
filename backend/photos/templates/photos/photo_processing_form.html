@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Photo Processing{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">Photo Processing Tools</h1>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Use this form to trigger the batch processing of photos from a directory on the server.</p>
+                
+                <form method="post" id="processing-form" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <fieldset class="mb-4">
+                        <legend class="h6">Processing Mode</legend>
+                        {% for radio in form.processing_mode %}
+                            <div class="form-check">
+                                {{ radio.tag }}
+                                <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                            </div>
+                        {% endfor %}
+                    </fieldset>
+
+                    <div class="mb-3">
+                        <label for="{{ form.source_directory.id_for_label }}" class="form-label">{{ form.source_directory.label }}</label>
+                        {{ form.source_directory }}
+                        {% if form.source_directory.help_text %}
+                            <div class="form-text">{{ form.source_directory.help_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.photo_type.id_for_label }}" class="form-label">{{ form.photo_type.label }}</label>
+                        {{ form.photo_type }}
+                        {% if form.photo_type.help_text %}
+                            <div class="form-text">{{ form.photo_type.help_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-success" id="start-processing-btn">Start Processing</button>
+                    <a href="{% url 'photos:list' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+
+                <div id="log-container" class="mt-4" {% if not start_processing %}style="display: none;"{% endif %}>
+                    <h5 class="border-bottom pb-2">Processing Log</h5>
+                    <pre id="log-output" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ form_data|json_script:"form-data-json" }}
+
+<script>
+// Function to get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+// Main function to handle the interactive import submission
+function submitManualDate(buttonElement) {
+    const promptElement = buttonElement.closest('.log-interactive-prompt');
+    const filePath = promptElement.dataset.filePath;
+    const dateInput = promptElement.querySelector('.manual-date-input');
+    const dateValue = dateInput.value;
+    const statusMessage = promptElement.querySelector('.status-message');
+    const photoTypeId = document.querySelector('[name="photo_type"]').value;
+
+    if (!dateValue) {
+        statusMessage.textContent = 'Please select a date and time.';
+        statusMessage.className = 'status-message mt-2 text-danger';
+        return;
+    }
+
+    // Disable buttons to prevent multiple submissions
+    promptElement.querySelectorAll('button, input').forEach(el => el.disabled = true);
+    statusMessage.textContent = 'Importing...';
+    statusMessage.className = 'status-message mt-2 text-info';
+
+    fetch("{% url 'photos:import_single_photo' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            file_path: filePath,
+            datetime_original: dateValue,
+            photo_type_id: photoTypeId ? parseInt(photoTypeId, 10) : null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const logOutput = document.getElementById('log-output');
+        const fileName = filePath.split('/').pop();
+
+        if (data.status === 'success') {
+            promptElement.setAttribute('data-status', 'processed');
+            promptElement.style.display = 'none'; // Hide the prompt
+            logOutput.innerHTML += `<p class="log log-success">IMPORTED: ${fileName} - ${data.message}</p>`;
+        } else {
+            statusMessage.textContent = `Error: ${data.message}`;
+            statusMessage.className = 'status-message mt-2 text-danger';
+            promptElement.querySelectorAll('button, input').forEach(el => el.disabled = false);
+        }
+        logOutput.scrollTop = logOutput.scrollHeight;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        statusMessage.textContent = 'A network or server error occurred. See console for details.';
+        statusMessage.className = 'status-message mt-2 text-danger';
+        promptElement.querySelectorAll('button, input').forEach(el => el.disabled = false);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const startProcessing = {{ start_processing|yesno:"true,false" }};
+    if (!startProcessing) return;
+
+    const logContainer = document.getElementById('log-container');
+    const logOutput = document.getElementById('log-output');
+    const submitBtn = document.getElementById('start-processing-btn');
+    
+    submitBtn.disabled = true;
+    logOutput.innerHTML = "<p class='log log-info'>Connecting to server...</p>";
+
+    const formData = JSON.parse(document.getElementById('form-data-json').textContent);
+    const params = new URLSearchParams();
+    params.append('start_stream', 'true');
+    params.append('mode', formData.processing_mode);
+    params.append('source_directory', formData.source_directory);
+    if (formData.photo_type) {
+        params.append('photo_type_id', formData.photo_type);
+    }
+
+    const source = new EventSource("{% url 'photos:processing' %}?" + params.toString());
+
+    source.onmessage = function(event) {
+        logOutput.innerHTML += event.data;
+        logOutput.scrollTop = logOutput.scrollHeight;
+    };
+
+    source.onerror = function(event) {
+        logOutput.innerHTML += "<p class='log log-success'><strong>Process finished.</strong></p>";
+        source.close();
+        submitBtn.disabled = false;
+    };
+});
+</script>
+{% endblock %}

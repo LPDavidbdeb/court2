@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.title }} (Interactive View){% endblock %}
+
+{% block extra_head %}
+<style>
+    .toggles-container {
+        display: flex;
+        justify-content: flex-end;
+        gap: 20px; /* Adds space between the toggles */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="alert alert-warning">
+        <strong>Debug Info:</strong><br>
+        Total Nodes Sent from View: <strong>{{ debug_total_nodes }}</strong><br>
+        Last Node Numbering from View: <strong>{{ debug_last_node_numbering }}</strong>
+    </div>
+
+    <h1 class="mb-4 text-center">{{ document.title }}</h1>
+    
+    <div class="nodes-container">
+    {% for node in formatted_nodes %}
+        <div class="node-item py-2 border-bottom" style="padding-left: {{ node.indent_pixels }}px;">
+            <div class="row align-items-center">
+                
+                <div class="col-md-8"> {# Column for the statement text #}
+                    <strong>{{ node.numbering }}</strong>
+                    {% if node.content_object %}
+                        {{ node.content_object.text }}
+                    {% endif %}
+                </div>
+                
+                {% if node.content_object %}
+                <div class="col-md-4 text-end"> {# Column for the toggles #}
+                    <div class="toggles-container">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input is-true-toggle" type="checkbox" role="switch" 
+                                   id="is-true-{{ node.content_object.pk }}" 
+                                   data-statement-id="{{ node.content_object.pk }}" 
+                                   {% if node.content_object.is_true %}checked{% endif %}>
+                            <label class="form-check-label" for="is-true-{{ node.content_object.pk }}">Is True</label>
+                        </div>
+                        
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input is-falsifiable-toggle" type="checkbox" role="switch" 
+                                   id="is-falsifiable-{{ node.content_object.pk }}" 
+                                   data-statement-id="{{ node.content_object.pk }}" 
+                                   {% if node.content_object.is_falsifiable %}checked{% endif %} 
+                                   {% if node.content_object.is_true %}disabled{% endif %}>
+                            <label class="form-check-label" for="is-falsifiable-{{ node.content_object.pk }}">Falsifiable</label>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = getCookie('csrftoken');
+
+    document.querySelectorAll('.is-true-toggle, .is-falsifiable-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const statementId = this.dataset.statementId;
+            const isChecked = this.checked;
+            const fieldToUpdate = this.classList.contains('is-true-toggle') ? 'is_true' : 'is_falsifiable';
+
+            if (fieldToUpdate === 'is_true') {
+                const falsifiableToggle = document.getElementById(`is-falsifiable-${statementId}`);
+                if (isChecked) {
+                    if (falsifiableToggle.checked) {
+                        falsifiableToggle.checked = false;
+                        sendUpdateRequest(statementId, 'is_falsifiable', false);
+                    }
+                    falsifiableToggle.disabled = true;
+                } else {
+                    falsifiableToggle.disabled = false;
+                }
+            }
+
+            sendUpdateRequest(statementId, fieldToUpdate, isChecked);
+        });
+    });
+
+    function sendUpdateRequest(statementId, field, value) {
+        fetch('{% url "document_manager:update_statement_flags" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                statement_id: statementId,
+                field: field,
+                value: value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status !== 'success') {
+                console.error('Update failed:', data.message);
+                alert('Error updating statement: ' + data.message);
+                const toggle = document.getElementById(`${field.replace('_', '-')}-${statementId}`);
+                if (toggle) toggle.checked = !toggle.checked;
+            }
+        })
+        .catch(error => {
+            console.error('AJAX error:', error);
+            alert('An unexpected error occurred.');
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

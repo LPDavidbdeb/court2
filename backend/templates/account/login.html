@@ -1,0 +1,20 @@
+{% extends "auth_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="auth-form-container">
+    <h2>Log In</h2>
+    <p class="text-muted">Accès réservé aux utilisateurs autorisés.</p>
+    <hr class="border-secondary">
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">Log In</button>
+            <a class="btn btn-link text-secondary" href="{% url 'account_reset_password' %}">Forgot Password?</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

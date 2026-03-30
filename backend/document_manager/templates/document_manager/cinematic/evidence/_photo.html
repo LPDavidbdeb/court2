@@ -1,0 +1,14 @@
+<div class="stream-content text-center">
+    <div class="text-muted text-uppercase small mb-3 text-start" style="letter-spacing: 1px;">
+        <i class="fas fa-camera"></i> Preuve Photographique
+    </div>
+
+    <div class="position-relative d-inline-block">
+        <img src="{{ evidence.image.url }}" class="img-fluid rounded shadow-lg" style="max-height: 50vh; object-fit: contain;" alt="{{ evidence.title }}">
+    </div>
+
+    <p class="mt-3 fw-bold">{{ evidence.title }}</p>
+    {% if evidence.description %}
+        <p class="text-muted small">{{ evidence.description }}</p>
+    {% endif %}
+</div>
