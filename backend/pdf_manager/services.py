@@ -1,28 +1,34 @@
-import tabula
-import pandas as pd
-from typing import List, Dict, Any
-from .models import PDFDocument
+from typing import List, Optional
+from django.shortcuts import get_object_or_404
+from .models import PDFDocument, Quote
 
-def extract_tables_from_pdf(pdf_id: int, pages: str = "all") -> List[Dict[str, Any]]:
-    """
-    Extracts tables from a PDF document using tabula-py and returns them as a list of dictionaries.
-    """
-    pdf_doc = PDFDocument.objects.get(pk=pdf_id)
-    if not pdf_doc.file:
-        return []
+# --- PDF Document Services ---
+def list_pdfs_service() -> List[PDFDocument]:
+    return PDFDocument.objects.select_related('author').all()
 
-    # Use tabula to read the PDF
-    # tabula.read_pdf returns a list of DataFrames
-    dfs = tabula.read_pdf(pdf_doc.file.path, pages=pages, multiple_tables=True)
-    
-    results = []
-    for i, df in enumerate(dfs):
-        # Convert DataFrame to a list of records (dictionaries)
-        table_data = df.to_dict(orient="records")
-        results.append({
-            "table_index": i,
-            "columns": list(df.columns),
-            "data": table_data
-        })
-    
-    return results
+def get_pdf_service(pdf_id: int) -> PDFDocument:
+    return get_object_or_404(PDFDocument.objects.select_related('author'), pk=pdf_id)
+
+def create_pdf_service(data: dict) -> PDFDocument:
+    return PDFDocument.objects.create(**data)
+
+def update_pdf_service(pdf_id: int, data: dict) -> PDFDocument:
+    pdf = get_pdf_service(pdf_id)
+    for attr, value in data.items():
+        setattr(pdf, attr, value)
+    pdf.save()
+    return pdf
+
+def delete_pdf_service(pdf_id: int) -> None:
+    pdf = get_pdf_service(pdf_id)
+    pdf.delete()
+
+# --- Quote Services ---
+def list_pdf_quotes_service(pdf_id: Optional[int] = None) -> List[Quote]:
+    qs = Quote.objects.all()
+    if pdf_id:
+        qs = qs.filter(pdf_document_id=pdf_id)
+    return qs
+
+def get_pdf_quote_service(quote_id: int) -> Quote:
+    return get_object_or_404(Quote, pk=quote_id)

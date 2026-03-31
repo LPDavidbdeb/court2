@@ -1,5 +1,5 @@
 import api from './api';
-import { LegalCase, LegalCaseDetail, PerjuryContestation } from '../types/api';
+import type { LegalCase, LegalCaseDetail, PerjuryContestation } from '@/types/api';
 
 export const caseService = {
   list: async () => {

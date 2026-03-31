@@ -9,7 +9,6 @@ class EmailThreadSchema(BaseModel):
     thread_id: str
     subject: Optional[str] = None
     protagonist: Optional[ProtagonistSchema] = None
-    saved_at: datetime
     updated_at: datetime
 
     class Config:
@@ -20,17 +19,23 @@ class EmailSchema(ExhibitableBaseSchema):
     message_id: str
     subject: Optional[str] = None
     sender: Optional[str] = None
-    recipients_to: Optional[str] = None
-    recipients_cc: Optional[str] = None
-    recipients_bcc: Optional[str] = None
     date_sent: Optional[datetime] = None
     body_plain_text: Optional[str] = None
-    eml_file: Optional[str] = None
     sender_protagonist: Optional[ProtagonistSchema] = None
     recipient_protagonists: List[ProtagonistSchema] = []
 
     class Config:
         from_attributes = True
+
+class EmailCreateSchema(BaseModel):
+    thread_id: int
+    message_id: str
+    subject: Optional[str] = None
+    sender: Optional[str] = None
+    date_sent: Optional[datetime] = None
+    body_plain_text: Optional[str] = None
+    sender_protagonist_id: Optional[int] = None
+    recipient_protagonists_ids: List[int] = []
 
 class EmailQuoteSchema(ExhibitableBaseSchema):
     email_id: int
@@ -41,4 +46,4 @@ class EmailQuoteSchema(ExhibitableBaseSchema):
         from_attributes = True
 
 class EmailThreadDetailSchema(EmailThreadSchema):
-    emails: List[EmailSchema]
+    emails: List[EmailSchema] = []

@@ -1,27 +1,42 @@
 from typing import List, Any
 from ninja import Router
-from .models import Document
-from .schemas import DocumentSchema
-from .services import get_document_tree_service
+from .schemas import DocumentSchema, DocumentCreateSchema, StatementSchema
+from .services import (
+    list_documents_service,
+    get_document_service,
+    create_document_service,
+    update_document_service,
+    delete_document_service,
+    get_document_tree_service,
+    list_statements_service
+)
 
 router = Router(tags=["Documents"])
 
 @router.get("/", response=List[DocumentSchema])
 def list_documents(request):
-    """
-    List all documents in the library.
-    """
-    return Document.objects.all()
+    return list_documents_service()
 
-@router.get("/{document_id}/tree", response=List[Any])
-def get_document_tree(request, document_id: int):
-    """
-    Returns the treebeard annotated list for a document.
-    """
-    # treebeard returns tuples (instance, info)
-    annotated_list = get_document_tree_service(document_id)
-    
-    # Format the data for JSON serialization
+@router.get("/{doc_id}", response=DocumentSchema)
+def get_document(request, doc_id: int):
+    return get_document_service(doc_id)
+
+@router.post("/", response=DocumentSchema)
+def create_document(request, data: DocumentCreateSchema):
+    return create_document_service(data.dict())
+
+@router.put("/{doc_id}", response=DocumentSchema)
+def update_document(request, doc_id: int, data: DocumentCreateSchema):
+    return update_document_service(doc_id, data.dict())
+
+@router.delete("/{doc_id}")
+def delete_document(request, doc_id: int):
+    delete_document_service(doc_id)
+    return {"success": True}
+
+@router.get("/{doc_id}/tree", response=List[Any])
+def get_document_tree(request, doc_id: int):
+    annotated_list = get_document_tree_service(doc_id)
     result = []
     for instance, info in annotated_list:
         result.append({
@@ -31,6 +46,6 @@ def get_document_tree(request, document_id: int):
             "document_id": instance.document_id,
             "content_type_id": instance.content_type_id,
             "object_id": instance.object_id,
-            "info": info # This contains 'open' and 'close' flags for the tree
+            "info": info
         })
     return result

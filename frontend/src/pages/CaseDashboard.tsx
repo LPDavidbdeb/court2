@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { caseService } from '../services/caseService';
-import { LegalCaseDetail, PerjuryContestation, ProducedExhibit } from '../types/api';
+import type { LegalCaseDetail, PerjuryContestation, ProducedExhibit } from '@/types/api';
 import {
   Card,
   CardContent,
@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, List as TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -135,18 +135,16 @@ const CaseDashboard: React.FC = () => {
       </div>
 
       <Tabs defaultValue="registry" className="w-full">
-        <div className="flex items-center justify-between mb-4 border-b">
-          <div className="flex gap-8">
-            <TabsTrigger value="registry" className="pb-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-bold uppercase text-[11px] tracking-widest px-0">
-              <FileStack className="h-4 w-4 mr-2" />
-              Exhibit Registry
-            </TabsTrigger>
-            <TabsTrigger value="contestations" className="pb-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-bold uppercase text-[11px] tracking-widest px-0">
-              <Scale className="h-4 w-4 mr-2" />
-              Perjury Analysis
-            </TabsTrigger>
-          </div>
-        </div>
+        <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0 mb-4 gap-8">
+          <TabsTrigger value="registry" className="pb-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-bold uppercase text-[11px] tracking-widest px-0">
+            <FileStack className="h-4 w-4 mr-2" />
+            Exhibit Registry
+          </TabsTrigger>
+          <TabsTrigger value="contestations" className="pb-4 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent font-bold uppercase text-[11px] tracking-widest px-0">
+            <Scale className="h-4 w-4 mr-2" />
+            Perjury Analysis
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="registry" className="mt-0">
           <Card className="shadow-sm border-slate-200">

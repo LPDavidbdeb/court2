@@ -1,40 +1,60 @@
 from typing import List
 from ninja import Router
-from django.db.models import Min
-from django.shortcuts import get_object_or_404
-from .models import EmailThread, Email, Quote
-from .schemas import EmailThreadSchema, EmailThreadDetailSchema, EmailSchema, EmailQuoteSchema
+from .schemas import (
+    EmailThreadSchema, 
+    EmailThreadDetailSchema, 
+    EmailSchema, 
+    EmailCreateSchema,
+    EmailQuoteSchema
+)
+from .services import (
+    list_threads_service,
+    get_thread_service,
+    delete_thread_service,
+    list_emails_service,
+    get_email_service,
+    create_email_service,
+    update_email_service,
+    delete_email_service,
+    list_quotes_service
+)
 
 router = Router(tags=["Emails"])
 
 @router.get("/threads", response=List[EmailThreadSchema])
 def list_threads(request):
-    """
-    List all email threads, ordered by the date of the first email in the thread.
-    """
-    return EmailThread.objects.annotate(
-        start_date=Min('emails__date_sent')
-    ).order_by('-start_date')
+    return list_threads_service()
 
 @router.get("/threads/{thread_id}", response=EmailThreadDetailSchema)
 def get_thread(request, thread_id: int):
-    """
-    Retrieve details of a specific email thread, including all emails.
-    """
-    thread = get_object_or_404(EmailThread, pk=thread_id)
-    return thread
+    return get_thread_service(thread_id)
+
+@router.delete("/threads/{thread_id}")
+def delete_thread(request, thread_id: int):
+    delete_thread_service(thread_id)
+    return {"success": True}
+
+@router.get("/emails", response=List[EmailSchema])
+def list_emails(request):
+    return list_emails_service()
 
 @router.get("/emails/{email_id}", response=EmailSchema)
 def get_email(request, email_id: int):
-    """
-    Retrieve details of a specific email.
-    """
-    email = get_object_or_404(Email, pk=email_id)
-    return email
+    return get_email_service(email_id)
+
+@router.post("/emails", response=EmailSchema)
+def create_email(request, data: EmailCreateSchema):
+    return create_email_service(data.dict())
+
+@router.put("/emails/{email_id}", response=EmailSchema)
+def update_email(request, email_id: int, data: EmailCreateSchema):
+    return update_email_service(email_id, data.dict())
+
+@router.delete("/emails/{email_id}")
+def delete_email(request, email_id: int):
+    delete_email_service(email_id)
+    return {"success": True}
 
 @router.get("/emails/{email_id}/quotes", response=List[EmailQuoteSchema])
 def list_email_quotes(request, email_id: int):
-    """
-    List all quotes for a specific email.
-    """
-    return Quote.objects.filter(email_id=email_id)
+    return list_quotes_service(email_id=email_id)
