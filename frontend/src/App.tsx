@@ -12,6 +12,8 @@ import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
 import Layout from './components/Layout';
 import { Mail, FileText, Briefcase, CalendarDays, ArrowRight } from 'lucide-react';
+import TimelineView from './components/TimelineView';
+import EvidenceGallery from './components/EvidenceGallery';
 
 const Dashboard = () => {
   const [cases, setCases] = useState<any[]>([]);
@@ -214,6 +216,8 @@ function App() {
           <Route path="/emails/threads/:threadId" element={<PrivateRoute><EmailThreadDetail /></PrivateRoute>} />
           <Route path="/events" element={<PrivateRoute><Events /></PrivateRoute>} />
           <Route path="/events/:eventId" element={<PrivateRoute><EventDetail /></PrivateRoute>} />
+          <Route path="/timeline" element={<PrivateRoute><TimelineView /></PrivateRoute>} />
+          <Route path="/gallery" element={<PrivateRoute><EvidenceGallery /></PrivateRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

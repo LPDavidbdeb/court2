@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Search, Bell, User as UserIcon, Settings } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Link } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();
@@ -18,6 +19,11 @@ const Navbar: React.FC = () => {
           />
         </div>
       </div>
+
+      <nav className="flex gap-4 ml-8">
+        <Link to="/timeline" className="text-sm font-bold text-primary hover:underline">Timeline</Link>
+        <Link to="/gallery" className="text-sm font-bold text-primary hover:underline">Evidence Gallery</Link>
+      </nav>
 
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" className="text-slate-500">
