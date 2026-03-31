@@ -14,7 +14,11 @@ api.register_controllers(NinjaJWTDefaultController)
 from case_manager.api import router as case_router
 from document_manager.api import router as document_router
 from pdf_manager.api import router as pdf_router
+from email_manager.api import router as email_router
+from events.api import router as events_router
 
 api.add_router("/cases", case_router)
 api.add_router("/documents", document_router)
 api.add_router("/pdfs", pdf_router)
+api.add_router("/emails", email_router)
+api.add_router("/events", events_router)

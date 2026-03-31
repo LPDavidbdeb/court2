@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # --- Headless V2 API Additions ---
     'ninja_extra',
     'ninja_jwt',
+    'corsheaders',
 
     'django_extensions',
     'django_bootstrap5',
@@ -57,7 +58,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'sorl.thumbnail',
     'widget_tweaks',
-    'mptt',
+    'treebeard',
     'tinymce',
     'django_bleach',
     'bootstrap',
@@ -253,3 +254,10 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+

@@ -1,33 +1,28 @@
-from typing import List, Optional
-from pydantic import BaseModel
+from typing import List, Optional, Any, Dict
+from pydantic import BaseModel, Field
 from datetime import datetime
+from core.schemas import ExhibitableBaseSchema
 
 class LibraryNodeSchema(BaseModel):
     id: int
     item: str
     document_id: int
-    parent_id: Optional[int] = None
-    created_at: datetime
-    updated_at: datetime
+    # Treebeard annotated list structure fields
+    depth: int
+    # Generic info
     content_type_id: Optional[int] = None
     object_id: Optional[int] = None
-    # We'll use a separate field for children to avoid infinite recursion in some cases,
-    # or use forward references.
-    children: List['LibraryNodeSchema'] = []
+    
+    # Placeholder for the object returned by get_annotated_list
+    # treebeard returns (instance, info) tuples or a list of dicts
+    # we'll use a wrapper if needed or simplify.
 
-    class Config:
-        from_attributes = True
-
-LibraryNodeSchema.update_forward_refs()
-
-class DocumentSchema(BaseModel):
-    id: int
+class DocumentSchema(ExhibitableBaseSchema):
     title: str
     author_id: Optional[int] = None
     document_original_date: Optional[datetime] = None
+    solemn_declaration: Optional[str] = None
     source_type: str
-    created_at: datetime
-    updated_at: datetime
     
     class Config:
         from_attributes = True

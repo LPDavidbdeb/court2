@@ -1,21 +1,36 @@
-from typing import List
+from typing import List, Any
 from ninja import Router
-from .models import Document, LibraryNode
-from .schemas import DocumentSchema, LibraryNodeSchema
-from mptt.utils import get_cached_trees
+from .models import Document
+from .schemas import DocumentSchema
+from .services import get_document_tree_service
 
 router = Router(tags=["Documents"])
 
 @router.get("/", response=List[DocumentSchema])
 def list_documents(request):
+    """
+    List all documents in the library.
+    """
     return Document.objects.all()
 
-@router.get("/{document_id}/tree", response=List[LibraryNodeSchema])
+@router.get("/{document_id}/tree", response=List[Any])
 def get_document_tree(request, document_id: int):
-    # Fetch all nodes for the document
-    nodes = LibraryNode.objects.filter(document_id=document_id)
+    """
+    Returns the treebeard annotated list for a document.
+    """
+    # treebeard returns tuples (instance, info)
+    annotated_list = get_document_tree_service(document_id)
     
-    # Use MPTT's get_cached_trees to build the hierarchy in-memory
-    # This expects a queryset and returns a list of root nodes with children cached.
-    root_nodes = get_cached_trees(nodes)
-    return root_nodes
+    # Format the data for JSON serialization
+    result = []
+    for instance, info in annotated_list:
+        result.append({
+            "id": instance.id,
+            "item": instance.item,
+            "depth": instance.depth,
+            "document_id": instance.document_id,
+            "content_type_id": instance.content_type_id,
+            "object_id": instance.object_id,
+            "info": info # This contains 'open' and 'close' flags for the tree
+        })
+    return result

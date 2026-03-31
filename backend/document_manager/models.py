@@ -1,7 +1,7 @@
 from django.db import models
 from pgvector.django import VectorField
 from django.conf import settings
-from mptt.models import MPTTModel, TreeForeignKey
+from treebeard.mp_tree import MP_Node
 from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -85,12 +85,11 @@ class Statement(models.Model):
         verbose_name = "Statement"
         verbose_name_plural = "Statements"
 
-class LibraryNode(MPTTModel):
+class LibraryNode(MP_Node):
     """
     New tree structure model. Each tree within this model corresponds to a single Document.
     This model connects the Document (metadata) and Statement (content) in a hierarchy.
     """
-    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     document = models.ForeignKey(
         Document,
         on_delete=models.CASCADE,
@@ -116,9 +115,6 @@ class LibraryNode(MPTTModel):
         help_text="The primary key of the object this node points to."
     )
     content_object = GenericForeignKey('content_type', 'object_id')
-
-    class MPTTMeta:
-        order_insertion_by = ['item']
 
     class Meta:
         verbose_name = "Library Node"

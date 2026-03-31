@@ -59,7 +59,7 @@ hf-xet==1.4.2
 httpcore==1.0.9
 httplib2==0.31.0
 httpx==0.28.1
-huggingface_hub==1.8.0
+huggingface_hub
 idna==3.11
 ipykernel==7.1.0
 ipython==9.9.0
@@ -145,7 +145,7 @@ safetensors==0.7.0
 scikit-learn==1.8.0
 scipy==1.17.1
 Send2Trash==2.1.0
-sentence-transformers==2.7.0
+sentence-transformers
 shellingham==1.5.4
 six==1.17.0
 sorl-thumbnail==12.11.0
@@ -156,12 +156,12 @@ sympy==1.14.0
 terminado==0.18.1
 threadpoolctl==3.6.0
 tinycss2==1.1.1
-tokenizers==0.22.2
+tokenizers
 torch==2.2.2
 tornado==6.5.4
 tqdm==4.67.1
 traitlets==5.14.3
-transformers==5.4.0
+transformers
 typer==0.24.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0
@@ -174,6 +174,10 @@ webcolors==25.10.0
 webencodings==0.5.1
 websocket-client==1.9.0
 whitenoise==6.7.0
-\n# New requirements for Headless V2\ndjango-ninja\nninja-jwt\ndjango-mptt
 django-ninja-extra
-tabula-py\npandas
+django-cors-headers
+django-ninja
+django-ninja-jwt
+django-mptt
+pandas
+tabula-py
