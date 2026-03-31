@@ -1,4 +1,4 @@
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from pydantic import BaseModel
 from datetime import datetime, date
 from core.schemas import ExhibitableBaseSchema
