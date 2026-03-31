@@ -4,7 +4,7 @@ import os
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.1.11']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.1.11', 'testserver']
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

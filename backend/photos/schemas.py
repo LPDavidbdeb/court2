@@ -1,9 +1,12 @@
 from typing import Optional, List
-from core.schemas import ExhibitableBaseSchema
-from datetime import datetime
 from pydantic import BaseModel
+from datetime import datetime
 
-class PhotoSchema(ExhibitableBaseSchema):
+
+# ── Raw Photo (unchanged from original) ──────────────────────────────────────
+
+class PhotoSchema(BaseModel):
+    id: Optional[int] = None
     file: Optional[str] = None
     file_name: str
     file_size: Optional[int] = None
@@ -18,11 +21,80 @@ class PhotoSchema(ExhibitableBaseSchema):
     class Config:
         from_attributes = True
 
-class PhotoDocumentSchema(ExhibitableBaseSchema):
+
+# ── Photo nested inside a document ───────────────────────────────────────────
+
+class PhotoInDocumentSchema(BaseModel):
+    """Minimal photo representation used when nested in PhotoDocumentDetailSchema."""
+    id: int
+    file_name: str
+    file_url: Optional[str] = None   # Absolute URL, built by the API view
+    width: Optional[int] = None
+    height: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ── PhotoDocument list item ───────────────────────────────────────────────────
+
+class PhotoDocumentListSchema(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    photo_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ── PhotoDocument detail ──────────────────────────────────────────────────────
+
+class PhotoDocumentDetailSchema(BaseModel):
+    id: int
     title: str
     description: Optional[str] = None
     ai_analysis: Optional[str] = None
-    # We can include a summary of photos or a list of IDs/Schemas if needed
-    
+    created_at: datetime
+    updated_at: datetime
+    photos: List[PhotoInDocumentSchema] = []
+
+    class Config:
+        from_attributes = True
+
+
+# ── Request / Response payloads ───────────────────────────────────────────────
+
+class DescriptionUpdateSchema(BaseModel):
+    description: str
+
+
+# The three personas shown in the legacy UI select element.
+VALID_PERSONAS = {'forensic_clerk', 'official_scribe', 'summary_clerk'}
+
+
+class AnalyzeRequestSchema(BaseModel):
+    persona: str = 'forensic_clerk'
+
+    def effective_persona(self) -> str:
+        """Return the persona key, falling back to the default if unknown."""
+        return self.persona if self.persona in VALID_PERSONAS else 'forensic_clerk'
+
+
+class AnalysisResponseSchema(BaseModel):
+    status: str
+    analysis: Optional[str] = None
+    message: Optional[str] = None
+
+
+# Kept for any existing code that imports PhotoDocumentSchema by name
+class PhotoDocumentSchema(BaseModel):
+    id: Optional[int] = None
+    title: str
+    description: Optional[str] = None
+    ai_analysis: Optional[str] = None
+
     class Config:
         from_attributes = True

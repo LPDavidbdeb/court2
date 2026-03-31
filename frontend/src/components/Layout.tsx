@@ -1,19 +1,8 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Briefcase, 
-  FileText, 
-  Mail, 
-  LayoutDashboard, 
-  LogOut,
-  ChevronRight,
-  Gavel,
-  CalendarDays,
-  Users
-} from 'lucide-react';
+import { LogOut, Gavel, LayoutDashboard, ChevronRight, Image } from 'lucide-react';
 import { Button } from './ui/button';
-import Navbar from './Navbar';
 
 const SidebarItem = ({ icon: Icon, label, to, active }: any) => (
   <Link to={to}>
@@ -29,7 +18,7 @@ const SidebarItem = ({ icon: Icon, label, to, active }: any) => (
 );
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -40,80 +29,42 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
       <aside className="w-64 bg-white border-r flex flex-col fixed inset-y-0 shadow-sm z-50">
         <div className="p-6 border-b flex items-center gap-2">
           <Gavel className="h-6 w-6 text-primary" />
           <span className="text-xl font-bold tracking-tight text-slate-900">Court V2</span>
         </div>
-        
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto font-sans">
-          <SidebarItem 
-            icon={LayoutDashboard} 
-            label="Dashboard" 
-            to="/" 
-            active={location.pathname === '/'} 
+
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <SidebarItem
+            icon={LayoutDashboard}
+            label="Home"
+            to="/"
+            active={location.pathname === '/'}
           />
-          <div className="pt-4 pb-2 px-4">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Evidence Modules</span>
-          </div>
-          <SidebarItem 
-            icon={CalendarDays} 
-            label="Events Timeline" 
-            to="/events" 
-            active={location.pathname.startsWith('/events')} 
-          />
-          <SidebarItem 
-            icon={Mail} 
-            label="Email Registry" 
-            to="/emails/threads" 
-            active={location.pathname.startsWith('/emails')} 
-          />
-          <SidebarItem 
-            icon={FileText} 
-            label="PDF Vault" 
-            to="/pdfs" 
-            active={location.pathname === '/pdfs'} 
-          />
-          <SidebarItem 
-            icon={FileText} 
-            label="General Library" 
-            to="/documents" 
-            active={location.pathname === '/documents'} 
-          />
-          <div className="pt-4 pb-2 px-4">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Management</span>
-          </div>
-          <SidebarItem 
-            icon={Briefcase} 
-            label="Legal Cases" 
-            to="/" 
-            active={location.pathname.startsWith('/cases')} 
-          />
-          <SidebarItem 
-            icon={Users} 
-            label="Protagonists" 
-            to="/protagonists" 
-            active={location.pathname === '/protagonists'} 
+          <SidebarItem
+            icon={Image}
+            label="Photo Documents"
+            to="/photos/documents"
+            active={location.pathname.startsWith('/photos')}
           />
         </nav>
 
-        <div className="p-4 border-t bg-slate-50/50">
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 font-bold uppercase text-[10px] tracking-widest"
+        <div className="p-4 border-t">
+          <div className="text-xs text-slate-500 mb-3 px-1 truncate">{user?.email}</div>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 font-medium text-sm"
             onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Terminate Session
+            Log Out
           </Button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 ml-64 flex flex-col">
-        <Navbar />
-        <main className="p-8 flex-1">
+      <div className="flex-1 ml-64">
+        <main className="p-8">
           {children}
         </main>
       </div>

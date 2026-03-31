@@ -256,6 +256,12 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
+# --- NinjaJWT Configuration ---
+# Use email-based token obtain schema to match allauth's ACCOUNT_LOGIN_METHODS = {'email'}
+NINJA_JWT = {
+    "TOKEN_OBTAIN_PAIR_INPUT_SCHEMA": "mysite.jwt_schema.EmailTokenObtainPairInputSchema",
+}
+
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
