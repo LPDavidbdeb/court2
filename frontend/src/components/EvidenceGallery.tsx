@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
-import { PhotoDocumentSchema } from '../types/api';
+import type { PhotoDocumentSchema } from '../types/api';
 import { Card } from './ui/card';
 import { Skeleton } from './ui/skeleton';
 
@@ -33,4 +33,3 @@ const EvidenceGallery: React.FC = () => {
 };
 
 export default EvidenceGallery;
-

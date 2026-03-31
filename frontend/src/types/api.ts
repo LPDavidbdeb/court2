@@ -1,42 +1,62 @@
-// TypeScript interfaces mirroring backend Pydantic schemas
-
-export interface PhotoDocumentSchema {
+export interface ExhibitableBase {
   id: number;
   public_url?: string;
   created_at?: string;
   updated_at?: string;
-  file_name: string;
-  file_size?: number;
-  width?: number;
-  height?: number;
-  image_format?: string;
-  image_mode?: string;
-  artist?: string;
-  datetime_original?: string;
-  gps_latitude?: number;
-  gps_longitude?: number;
-  make?: string;
-  model?: string;
-  iso_speed?: number;
-  exposure_time?: string;
-  f_number?: number;
-  focal_length?: number;
-  lens_model?: string;
 }
 
-export interface EventSchema {
+export interface ProducedExhibit extends ExhibitableBase {
+  case_id: number;
+  exhibit_type: string;
+  parties?: string;
+  label?: string;
+  date_display?: string;
+  description?: string;
+}
+
+export interface ProtagonistEmail {
+  id?: number;
+  email_address: string;
+  description?: string;
+}
+
+export interface Protagonist {
   id: number;
-  public_url?: string;
-  created_at?: string;
-  updated_at?: string;
-  date: string;
-  explanation: string;
-  email_quote?: string;
-  linked_email_id?: number;
-  parent_id?: number;
+  first_name: string;
+  last_name?: string;
+  role: string;
+  linkedin_url?: string;
+  created_at: string;
+  updated_at: string;
+  emails: ProtagonistEmail[];
 }
 
-export interface EventDetailSchema extends EventSchema {
-  linked_photos: PhotoDocumentSchema[];
+export interface ProtagonistCreate {
+  first_name: string;
+  last_name?: string;
+  role: string;
+  linkedin_url?: string;
+  emails: ProtagonistEmail[];
 }
 
+export interface PerjuryContestation {
+  id: number;
+  case_id: number;
+  title: string;
+  final_sec1_declaration: string;
+  final_sec2_proof: string;
+  final_sec3_mens_rea: string;
+  final_sec4_intent: string;
+  updated_at: string;
+}
+
+export interface LegalCase {
+  id: number;
+  title: string;
+  created_at: string;
+}
+
+export interface LegalCaseDetail extends LegalCase {
+  contestations: PerjuryContestation[];
+  produced_exhibits: ProducedExhibit[];
+}

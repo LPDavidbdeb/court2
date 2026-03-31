@@ -1,21 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
-import { EventSchema } from '../types/api';
+import type { EventSchema } from '../types/api';
 import { Card } from './ui/card';
 import { Skeleton } from './ui/skeleton';
 
 const TimelineView: React.FC = () => {
   const [events, setEvents] = useState<EventSchema[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<EventSchema[]>('/events/')
-      .then(res => setEvents(res.data))
+    api.get('/events/')
+      .then(res => {
+        // Defensive: log and check if array
+        console.log('Events API response:', res.data);
+        if (Array.isArray(res.data)) {
+          setEvents(res.data);
+        } else if (res.data && Array.isArray(res.data.results)) {
+          setEvents(res.data.results);
+        } else {
+          setError('Unexpected API response format.');
+        }
+      })
+      .catch(err => {
+        setError('Failed to load events.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return <Skeleton className="h-40 w-full" />;
+  }
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
   }
 
   return (
@@ -32,4 +49,3 @@ const TimelineView: React.FC = () => {
 };
 
 export default TimelineView;
-

@@ -9,7 +9,8 @@ import {
   LogOut,
   ChevronRight,
   Gavel,
-  CalendarDays
+  CalendarDays,
+  Users
 } from 'lucide-react';
 import { Button } from './ui/button';
 import Navbar from './Navbar';
@@ -43,7 +44,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <aside className="w-64 bg-white border-r flex flex-col fixed inset-y-0 shadow-sm z-50">
         <div className="p-6 border-b flex items-center gap-2">
           <Gavel className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold tracking-tight">Court V2</span>
+          <span className="text-xl font-bold tracking-tight text-slate-900">Court V2</span>
         </div>
         
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto font-sans">
@@ -83,16 +84,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             to="/" 
             active={location.pathname.startsWith('/cases')} 
           />
+          <SidebarItem 
+            icon={Users} 
+            label="Protagonists" 
+            to="/protagonists" 
+            active={location.pathname === '/protagonists'} 
+          />
         </nav>
 
         <div className="p-4 border-t bg-slate-50/50">
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 font-bold uppercase text-[10px] tracking-widest"
             onClick={handleLogout}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
+            Terminate Session
           </Button>
         </div>
       </aside>
