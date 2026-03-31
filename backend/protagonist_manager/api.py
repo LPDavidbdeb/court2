@@ -46,7 +46,7 @@ def list_protagonists(request):
     All protagonists ordered alphabetically, with denormalised evidence counts
     so the directory table needs no extra API calls.
     """
-    return list(
+    qs = (
         Protagonist.objects
         .prefetch_related("emails")
         .annotate(
@@ -55,6 +55,21 @@ def list_protagonists(request):
         )
         .order_by("last_name", "first_name")
     )
+
+    # Materialize related managers so Pydantic receives plain lists
+    return [
+        {
+            "id": p.id,
+            "first_name": p.first_name,
+            "last_name": p.last_name,
+            "role": p.role,
+            "linkedin_url": p.linkedin_url,
+            "email_thread_count": p.email_thread_count,
+            "photo_document_count": p.photo_document_count,
+            "emails": list(p.emails.all()),
+        }
+        for p in qs
+    ]
 
 
 # ── Detail ────────────────────────────────────────────────────────────────────

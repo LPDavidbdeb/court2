@@ -8,8 +8,9 @@ import { ChevronDown, Gavel, LogOut, User } from 'lucide-react';
 const EVIDENCE_ITEMS: { label: string; to: string | null }[] = [
   { label: 'Photo Documents', to: '/photos/documents' },
   { label: 'Email Threads',   to: '/emails/threads' },
-  { label: 'Events',          to: null },
-  { label: 'PDFs',            to: null },
+  { label: 'Events',          to: '/events' },
+  { label: 'Google Chat',     to: '/chats/sequences' },
+  { label: 'PDFs',            to: '/pdfs' },
   { label: 'Library',         to: null },
 ];
 
@@ -134,7 +135,7 @@ export default function Navbar() {
           <NavDropdown
             label="Evidence"
             items={EVIDENCE_ITEMS}
-            activePrefixes={['/photos', '/emails']}
+            activePrefixes={['/photos', '/emails', '/pdfs', '/events', '/chats']}
           />
 
           <NavDropdown

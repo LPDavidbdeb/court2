@@ -17,6 +17,8 @@ class SuperuserRequiredMiddleware:
             '/pdf/',
             '/email/',
             '/document/',
+            # Exempt media files (e.g., PDFs in iframes)
+            '/media/',
         ]
 
     def __call__(self, request):

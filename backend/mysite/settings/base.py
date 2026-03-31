@@ -96,7 +96,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware', # Disabled to allow PDF iframes in React
     'allauth.account.middleware.AccountMiddleware', # django-allauth middleware
     'core.middleware.SuperuserRequiredMiddleware', # Custom middleware for superuser access
 ]
@@ -177,6 +177,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Media files (user-uploaded content)
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# --- Security Settings ---
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

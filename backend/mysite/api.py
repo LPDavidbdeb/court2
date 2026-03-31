@@ -22,6 +22,7 @@ def register_routers():
     from pdf_manager.api import router as pdf_router
     from email_manager.api import router as email_router
     from events.api import router as events_router
+    from googlechat_manager.api import router as chat_router
     from protagonist_manager.api import router as protagonist_router
     from photos.api import router as photos_router
     from users.api import router as users_router
@@ -31,6 +32,7 @@ def register_routers():
     api.add_router("/pdfs", pdf_router)
     api.add_router("/emails", email_router)
     api.add_router("/events", events_router)
+    api.add_router("/chats", chat_router)
     api.add_router("/protagonists", protagonist_router)
     api.add_router("/photos", photos_router)
     api.add_router("/users", users_router)

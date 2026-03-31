@@ -10,6 +10,13 @@ import PhotoDocumentDetail from './pages/PhotoDocumentDetail';
 import EmailThreadList from './pages/EmailThreadList';
 import EmailThreadDetail from './pages/EmailThreadDetail';
 import EmlUpload from './pages/EmlUpload';
+import PDFVault from './pages/PDFVault';
+import PDFDetail from './pages/PDFDetail';
+import EventsTimeline from './pages/EventsTimeline';
+import EventDetail from './pages/EventDetail';
+import ChatStreamView from './pages/ChatStreamView';
+import ChatSequenceList from './pages/ChatSequenceList';
+import ChatSequenceDetail from './pages/ChatSequenceDetail';
 import ProtagonistDirectory from './pages/ProtagonistDirectory';
 import ProtagonistDetailPage from './pages/ProtagonistDetail';
 import { Gavel } from 'lucide-react';
@@ -118,6 +125,13 @@ function App() {
           <Route path="/emails/threads" element={<PrivateRoute><EmailThreadList /></PrivateRoute>} />
           <Route path="/emails/threads/:threadId" element={<PrivateRoute><EmailThreadDetail /></PrivateRoute>} />
           <Route path="/emails/upload" element={<PrivateRoute><EmlUpload /></PrivateRoute>} />
+          <Route path="/pdfs" element={<PrivateRoute><PDFVault /></PrivateRoute>} />
+          <Route path="/pdfs/:pdfId" element={<PrivateRoute><PDFDetail /></PrivateRoute>} />
+          <Route path="/events" element={<PrivateRoute><EventsTimeline /></PrivateRoute>} />
+          <Route path="/events/:eventId" element={<PrivateRoute><EventDetail /></PrivateRoute>} />
+          <Route path="/chats/stream" element={<PrivateRoute><ChatStreamView /></PrivateRoute>} />
+          <Route path="/chats/sequences" element={<PrivateRoute><ChatSequenceList /></PrivateRoute>} />
+          <Route path="/chats/sequences/:sequenceId" element={<PrivateRoute><ChatSequenceDetail /></PrivateRoute>} />
           <Route path="/protagonists" element={<PrivateRoute><ProtagonistDirectory /></PrivateRoute>} />
           <Route path="/protagonists/:protagonistId" element={<PrivateRoute><ProtagonistDetailPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
