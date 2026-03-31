@@ -6,23 +6,23 @@ import { useEffect, useState } from 'react';
 import api from './services/api';
 import CaseDashboard from './pages/CaseDashboard';
 import DocumentTree from './pages/DocumentTree';
-import EmailThreads from './pages/EmailThreads';
+import DocumentLibrary from './pages/DocumentLibrary';
+import EmailInbox from './pages/EmailInbox';
 import EmailThreadDetail from './pages/EmailThreadDetail';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
 import ProtagonistDirectory from './pages/ProtagonistDirectory';
+import PDFVault from './pages/PDFVault';
 import Layout from './components/Layout';
-import { Mail, FileText, Briefcase, CalendarDays, ArrowRight, Users } from 'lucide-react';
+import { Mail, FileText, Briefcase, CalendarDays, Shield } from 'lucide-react';
 
 const Dashboard = () => {
   const [cases, setCases] = useState<any[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
     api.get('/cases/').then((res) => setCases(res.data));
-    api.get('/documents/').then((res) => setDocuments(res.data));
     api.get('/events/').then((res) => setEvents(res.data.slice(0, 5)));
   }, []);
 
@@ -41,9 +41,9 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-4">Emails</div>
-            <Link to="/emails/threads">
+            <Link to="/emails">
               <Button variant="secondary" className="w-full font-bold bg-white text-blue-600 hover:bg-blue-50 border-none text-xs">
-                Browse
+                Inbox
               </Button>
             </Link>
           </CardContent>
@@ -66,14 +66,14 @@ const Dashboard = () => {
 
         <Card className="hover:shadow-lg transition-all border-none bg-indigo-600 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest opacity-80">Directory</CardTitle>
-            <Users className="h-4 w-4 opacity-80" />
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest opacity-80">Secure Vault</CardTitle>
+            <Shield className="h-4 w-4 opacity-80" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold mb-4">Actors</div>
-            <Link to="/protagonists">
+            <div className="text-2xl font-bold mb-4">PDFs</div>
+            <Link to="/pdfs">
               <Button variant="secondary" className="w-full font-bold bg-white text-indigo-600 hover:bg-indigo-50 border-none text-xs">
-                Contacts
+                View Vault
               </Button>
             </Link>
           </CardContent>
@@ -86,9 +86,11 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-4">Library</div>
-            <Button variant="secondary" className="w-full font-bold bg-white text-slate-800 hover:bg-slate-100 border-none text-xs">
-              Explore
-            </Button>
+            <Link to="/documents">
+              <Button variant="secondary" className="w-full font-bold bg-white text-slate-800 hover:bg-slate-100 border-none text-xs">
+                Explore
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -216,12 +218,15 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/cases/:caseId" element={<PrivateRoute><CaseDashboard /></PrivateRoute>} />
+          <Route path="/documents" element={<PrivateRoute><DocumentLibrary /></PrivateRoute>} />
           <Route path="/documents/:documentId/tree" element={<PrivateRoute><DocumentTree /></PrivateRoute>} />
-          <Route path="/emails/threads" element={<PrivateRoute><EmailThreads /></PrivateRoute>} />
+          <Route path="/emails" element={<PrivateRoute><EmailInbox /></PrivateRoute>} />
           <Route path="/emails/threads/:threadId" element={<PrivateRoute><EmailThreadDetail /></PrivateRoute>} />
+          <Route path="/timeline" element={<Navigate to="/events" replace />} />
           <Route path="/events" element={<PrivateRoute><Events /></PrivateRoute>} />
           <Route path="/events/:eventId" element={<PrivateRoute><EventDetail /></PrivateRoute>} />
           <Route path="/protagonists" element={<PrivateRoute><ProtagonistDirectory /></PrivateRoute>} />
+          <Route path="/pdfs" element={<PrivateRoute><PDFVault /></PrivateRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

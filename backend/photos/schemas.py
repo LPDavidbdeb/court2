@@ -1,25 +1,28 @@
-from typing import Optional
+from typing import Optional, List
 from core.schemas import ExhibitableBaseSchema
 from datetime import datetime
+from pydantic import BaseModel
+
+class PhotoSchema(ExhibitableBaseSchema):
+    file: Optional[str] = None
+    file_name: str
+    file_size: Optional[int] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    image_format: Optional[str] = None
+    image_mode: Optional[str] = None
+    datetime_original: Optional[datetime] = None
+    make: Optional[str] = None
+    model: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class PhotoDocumentSchema(ExhibitableBaseSchema):
-    file_name: str
-    file_size: Optional[int]
-    width: Optional[int]
-    height: Optional[int]
-    image_format: Optional[str]
-    image_mode: Optional[str]
-    artist: Optional[str]
-    datetime_original: Optional[datetime]
-    gps_latitude: Optional[float]
-    gps_longitude: Optional[float]
-    make: Optional[str]
-    model: Optional[str]
-    iso_speed: Optional[int]
-    exposure_time: Optional[str]
-    f_number: Optional[float]
-    focal_length: Optional[float]
-    lens_model: Optional[str]
-
+    title: str
+    description: Optional[str] = None
+    ai_analysis: Optional[str] = None
+    # We can include a summary of photos or a list of IDs/Schemas if needed
+    
     class Config:
         from_attributes = True

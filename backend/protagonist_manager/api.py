@@ -1,5 +1,7 @@
 from typing import List
 from ninja import Router
+from django.shortcuts import get_object_or_404
+from .models import Protagonist
 from .schemas import ProtagonistSchema, ProtagonistCreateSchema
 from .services import (
     list_protagonists_service,
@@ -17,8 +19,6 @@ def list_protagonists(request):
 
 @router.get("/{protagonist_id}", response=ProtagonistSchema)
 def get_protagonist(request, protagonist_id: int):
-    return get_object_or_404(Protagonist, pk=protagonist_id) # Should use service but get_object_or_404 is direct
-    # Correcting to use service
     return get_protagonist_service(protagonist_id)
 
 @router.post("/", response=ProtagonistSchema)

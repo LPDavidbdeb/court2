@@ -1,6 +1,6 @@
 from typing import List, Optional
 from core.schemas import ExhibitableBaseSchema
-from photos.schemas import PhotoDocumentSchema
+from photos.schemas import PhotoSchema
 from datetime import date
 
 class EventSchema(ExhibitableBaseSchema):
@@ -14,7 +14,7 @@ class EventSchema(ExhibitableBaseSchema):
         from_attributes = True
 
 class EventDetailSchema(EventSchema):
-    linked_photos: List[PhotoDocumentSchema] = []
+    linked_photos: List[PhotoSchema] = []
     # Optionally add children or other nested fields if needed
 
     class Config:

@@ -1,7 +1,19 @@
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
-from core.schemas import ProducedExhibitSchema
+from core.schemas import ExhibitableBaseSchema
+
+
+class ProducedExhibitSchema(ExhibitableBaseSchema):
+    case_id: int
+    exhibit_type: str
+    parties: Optional[str] = None
+    label: Optional[str] = None
+    date_display: Optional[str] = None
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class CaseCreateSchema(BaseModel):
     title: str

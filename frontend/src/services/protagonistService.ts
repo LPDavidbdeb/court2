@@ -1,5 +1,5 @@
 import api from './api';
-import { Protagonist, ProtagonistCreate } from '../types/api';
+import type { Protagonist, ProtagonistCreate } from '../types/api';
 
 export const protagonistService = {
   list: async () => {

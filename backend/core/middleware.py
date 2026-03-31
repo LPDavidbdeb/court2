@@ -7,6 +7,7 @@ class SuperuserRequiredMiddleware:
         # Define path prefixes that are exempt from the superuser check.
         # All django-allauth URLs are under /accounts/.
         self.exempt_prefixes = [
+            '/api/',
             '/accounts/',
             # The admin site has its own authentication, but we can exempt it too.
             '/admin/',

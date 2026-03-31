@@ -9,7 +9,7 @@ import { Mail, ArrowLeft } from 'lucide-react';
 
 interface EmailThread {
   id: number;
-  thread_id: str;
+  thread_id: string;
   subject: string;
   protagonist?: {
     first_name: string;

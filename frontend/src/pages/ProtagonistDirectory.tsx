@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { protagonistService } from '../services/protagonistService';
-import { Protagonist, ProtagonistCreate } from '../types/api';
+import type { Protagonist, ProtagonistCreate } from '../types/api';
 import {
   Table,
   TableBody,
@@ -28,7 +28,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Pencil, Trash2, Linkedin, Mail } from 'lucide-react';
+import { UserPlus, Pencil, Trash2, Link, Mail } from 'lucide-react';
 
 const ProtagonistDirectory: React.FC = () => {
   const [protagonists, setProtagonists] = useState<Protagonist[]>([]);
@@ -185,7 +185,7 @@ const ProtagonistDirectory: React.FC = () => {
                     <div className="flex gap-2">
                       {p.linkedin_url && (
                         <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800">
-                          <Linkedin className="h-4 w-4" />
+                          <Link className="h-4 w-4" />
                         </a>
                       )}
                       {p.emails.length > 0 && (
