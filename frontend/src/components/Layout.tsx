@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Gavel, LayoutDashboard, ChevronRight, Image } from 'lucide-react';
+import { LogOut, Gavel, LayoutDashboard, ChevronRight, Image, Mail } from 'lucide-react';
 import { Button } from './ui/button';
 
 const SidebarItem = ({ icon: Icon, label, to, active }: any) => (
@@ -47,6 +47,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             label="Photo Documents"
             to="/photos/documents"
             active={location.pathname.startsWith('/photos')}
+          />
+          <SidebarItem
+            icon={Mail}
+            label="Email Threads"
+            to="/emails/threads"
+            active={location.pathname.startsWith('/emails')}
           />
         </nav>
 

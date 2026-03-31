@@ -7,6 +7,9 @@ import api from './services/api';
 import Layout from './components/Layout';
 import PhotoDocumentList from './pages/PhotoDocumentList';
 import PhotoDocumentDetail from './pages/PhotoDocumentDetail';
+import EmailThreadList from './pages/EmailThreadList';
+import EmailThreadDetail from './pages/EmailThreadDetail';
+import EmlUpload from './pages/EmlUpload';
 import { Gavel } from 'lucide-react';
 
 const Home = () => {
@@ -110,6 +113,9 @@ function App() {
           <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
           <Route path="/photos/documents" element={<PrivateRoute><PhotoDocumentList /></PrivateRoute>} />
           <Route path="/photos/documents/:docId" element={<PrivateRoute><PhotoDocumentDetail /></PrivateRoute>} />
+          <Route path="/emails/threads" element={<PrivateRoute><EmailThreadList /></PrivateRoute>} />
+          <Route path="/emails/threads/:threadId" element={<PrivateRoute><EmailThreadDetail /></PrivateRoute>} />
+          <Route path="/emails/upload" element={<PrivateRoute><EmlUpload /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
