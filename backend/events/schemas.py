@@ -1,15 +1,7 @@
 from typing import List, Optional
-from pydantic import BaseModel
-from datetime import date
 from core.schemas import ExhibitableBaseSchema
-
-class PhotoSchema(BaseModel):
-    id: int
-    title: Optional[str] = None
-    file: Optional[str] = None
-    
-    class Config:
-        from_attributes = True
+from photos.schemas import PhotoDocumentSchema
+from datetime import date
 
 class EventSchema(ExhibitableBaseSchema):
     date: date
@@ -22,7 +14,8 @@ class EventSchema(ExhibitableBaseSchema):
         from_attributes = True
 
 class EventDetailSchema(EventSchema):
-    linked_photos: List[PhotoSchema] = []
-    children: List['EventSchema'] = []
+    linked_photos: List[PhotoDocumentSchema] = []
+    # Optionally add children or other nested fields if needed
 
-EventDetailSchema.update_forward_refs()
+    class Config:
+        from_attributes = True
