@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import api from '../services/api';
-import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import { MessageSquare, Loader2, User, ChevronLeft } from 'lucide-react';
+import { MessageSquare, Loader2, User } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { buttonVariants } from '../components/ui/button';
 
 interface ChatParticipant {
   id: number;
@@ -81,9 +80,12 @@ export default function ChatStreamView() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm" asChild>
-             <Link to="/chats/sequences">Manage Sequences</Link>
-           </Button>
+           <Link 
+             to="/chats/sequences"
+             className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+           >
+             Manage Sequences
+           </Link>
         </div>
       </div>
 

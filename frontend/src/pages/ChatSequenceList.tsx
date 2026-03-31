@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { Button, buttonVariants } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { MessageSquare, Eye, Trash2, List } from 'lucide-react';
+import { Card, CardContent } from '../components/ui/card';
+import { MessageSquare, Eye, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ChatSequence {
@@ -43,11 +43,12 @@ export default function ChatSequenceList() {
           <h1 className="text-3xl font-bold text-slate-900">Evidence Sequences</h1>
           <p className="text-slate-500">Curated chat excerpts linked to case themes.</p>
         </div>
-        <Button asChild>
-          <Link to="/chats/stream">
-             <MessageSquare className="h-4 w-4 mr-2" /> Open Stream
-          </Link>
-        </Button>
+        <Link 
+          to="/chats/stream"
+          className={cn(buttonVariants({ variant: 'default' }))}
+        >
+          <MessageSquare className="h-4 w-4 mr-2" /> Open Stream
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4">

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { Button, buttonVariants } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Calendar, Eye, Plus, Trash2, Image as ImageIcon, Mail } from 'lucide-react';
+import { Card, CardContent } from '../components/ui/card';
+import { Eye, Plus, Trash2, Image as ImageIcon, Mail } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface Event {

@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { Button, buttonVariants } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { 
   ChevronLeft, 
   Calendar, 
