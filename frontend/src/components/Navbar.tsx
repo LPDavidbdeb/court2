@@ -14,7 +14,7 @@ const EVIDENCE_ITEMS: { label: string; to: string | null }[] = [
 ];
 
 const MANAGEMENT_ITEMS: { label: string; to: string | null }[] = [
-  { label: 'Protagonists', to: null },
+  { label: 'Protagonists', to: '/protagonists' },
 ];
 
 // ── Dropdown ──────────────────────────────────────────────────────────────────
