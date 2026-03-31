@@ -10,6 +10,8 @@ import PhotoDocumentDetail from './pages/PhotoDocumentDetail';
 import EmailThreadList from './pages/EmailThreadList';
 import EmailThreadDetail from './pages/EmailThreadDetail';
 import EmlUpload from './pages/EmlUpload';
+import ProtagonistDirectory from './pages/ProtagonistDirectory';
+import ProtagonistDetailPage from './pages/ProtagonistDetail';
 import { Gavel } from 'lucide-react';
 
 const Home = () => {
@@ -116,6 +118,8 @@ function App() {
           <Route path="/emails/threads" element={<PrivateRoute><EmailThreadList /></PrivateRoute>} />
           <Route path="/emails/threads/:threadId" element={<PrivateRoute><EmailThreadDetail /></PrivateRoute>} />
           <Route path="/emails/upload" element={<PrivateRoute><EmlUpload /></PrivateRoute>} />
+          <Route path="/protagonists" element={<PrivateRoute><ProtagonistDirectory /></PrivateRoute>} />
+          <Route path="/protagonists/:protagonistId" element={<PrivateRoute><ProtagonistDetailPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
