@@ -1,39 +1,61 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import api from '../services/api';
+
+export interface UserProfile {
+  email: string;
+  first_name: string;
+  last_name: string;
+}
 
 interface AuthContextType {
-  user: any;
+  user: UserProfile | null;
   isAuthenticated: boolean;
-  login: (token: string, refresh: string) => void;
+  login: (token: string, refresh: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function tokenIsAlive(token: string): boolean {
+  try {
+    const decoded: any = jwtDecode(token);
+    return decoded.exp ? decoded.exp * 1000 > Date.now() : true;
+  } catch {
+    return false;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setUser(decoded);
-      } catch (e) {
+    if (token && tokenIsAlive(token)) {
+      api.get('/users/me')
+        .then(res => setUser(res.data))
+        .catch(() => {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+        })
+        .finally(() => setLoading(false));
+    } else {
+      if (token) {
+        // expired — clean up
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
       }
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const login = (token: string, refresh: string) => {
+  const login = async (token: string, refresh: string): Promise<void> => {
     localStorage.setItem('access_token', token);
     localStorage.setItem('refresh_token', refresh);
-    const decoded = jwtDecode(token);
-    setUser(decoded);
+    const res = await api.get('/users/me');
+    setUser(res.data);
   };
 
   const logout = () => {

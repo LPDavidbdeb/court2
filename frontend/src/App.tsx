@@ -43,7 +43,7 @@ const Login = () => {
     setError('');
     try {
       const res = await api.post('/token/pair', { email, password });
-      login(res.data.access, res.data.refresh);
+      await login(res.data.access, res.data.refresh);
       navigate('/', { replace: true });
     } catch {
       setError('Email ou mot de passe invalide. Accès refusé.');
